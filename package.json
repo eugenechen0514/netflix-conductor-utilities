@@ -6,7 +6,8 @@
   "types": "types/main.d.ts",
   "scripts": {
     "dev": "tsc -p ./tsconfig.json -w",
-    "dist": "tsc -p ./tsconfig.json -outDir ./dist"
+    "dist": "tsc -p ./tsconfig.json -outDir ./dist",
+    "deploy": "npm run dist & npm publish"
   },
   "repository": {
     "type": "git",
