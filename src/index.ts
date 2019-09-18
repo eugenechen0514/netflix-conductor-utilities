@@ -1,11 +1,11 @@
 
-export enum TaskTimeoutPolicyEnum {
+export enum TaskTimeoutPolicy {
     retry = 'RETRY',
     timeOutWF = 'TIME_OUT_WF',
     alertOnly = 'ALERT_ONLY',
 }
 
-export enum TaskRetryLogicEnum {
+export enum TaskRetryLogic {
     fixed = 'FIXED',
     exponentialBackoff = 'EXPONENTIAL_BACKOFF',
 }
@@ -37,7 +37,7 @@ export interface TaskMetadataDefinition {
     /**
      * Mechanism for the retries
      */
-    retryLogic?: TaskRetryLogicEnum,
+    retryLogic?: TaskRetryLogic,
 
     /**
      * Time to wait before retries
@@ -49,7 +49,7 @@ export interface TaskMetadataDefinition {
     /**
      * Task's timeout policy
      */
-    timeoutPolicy?: TaskTimeoutPolicyEnum,
+    timeoutPolicy?: TaskTimeoutPolicy,
 
     /**
      * Time in seconds, after which the task is marked as TIMED_OUT if not completed after transitioning to IN_PROGRESS
@@ -228,6 +228,61 @@ export interface WorkflowTask extends WorkflowTaskMetadata {
     asyncComplete: boolean,
 }
 
+export enum WorkflowStatus {
+    running = 'RUNNING',
+    completed = 'COMPLETED',
+    failed = 'FAILED',
+    timedOut = 'TIMED_OUT',
+    terminated = 'TERMINATED',
+    paused = 'PAUSED',
+}
+export interface Workflow {
+    createTime: number,
+    endTime: number,
+    priority: number,
+    schemaVersion: number,
+    startTime: number,
+    status: WorkflowStatus,
+    updateTime: number,
+    version: number,
+    workflowDefinition: WorkflowDefinition,
+    workflowId: string,
+    workflowName: string,
+    workflowType: string,
+    workflowVersion: number,
+    tasks: Task[],
+}
+
+export interface Task {
+    callbackAfterSeconds: number,
+    callbackFromWorker: boolean,
+    endTime: number,
+    executed: boolean,
+    pollCount: number,
+    queueWaitTime: number,
+    rateLimitFrequencyInSeconds: number,
+    rateLimitPerFrequency: number,
+    referenceTaskName: string,
+    responseTimeoutSeconds: number,
+    retried: boolean,
+    retryCount: number,
+    scheduledTime: number,
+    seq: number,
+    startDelayInSeconds: number,
+    startTime: number,
+    status: TaskState,
+    taskDefinition: TaskDefinition,
+    taskDefName: string,
+    taskId: string,
+    taskStatus: TaskState,
+    taskType: string,
+    updateTime: 0,
+    workflowInstanceId: string,
+    workflowPriority: number,
+    workflowTask: WorkflowTask,
+    workflowType: number
+}
+
 export interface PollTask {
     taskType: string;
     status: TaskState;
@@ -267,6 +322,8 @@ export enum TaskState {
     failed = 'FAILED',
     completed = 'COMPLETED',
     cancelled = 'CANCELLED',
+    timedOut = 'TIMED_OUT',
+    skipped = 'SKIPPED',
 }
 
 export interface UpdatingTaskResult {
@@ -282,5 +339,34 @@ export interface  ConductorSDKOptions {
     apiEndpoint?: string;
 }
 
+/**
+ * See https://netflix.github.io/conductor/apispec/#start-workflow-request
+ */
+export interface StartWorkflowOptions {
+    /**
+     * Name of the workflow
+     */
+    name: string,
+
+    /**
+     * Version
+     */
+    version?: number,
+
+    /**
+     *  correlation Id
+     */
+    correlationId?: string,
+
+    /**
+     * Priority
+     */
+    priority?: number,
+
+    input?: object,
+    taskToDomain?: object,
+}
+
 export * from './TaskMetadataManager';
 export * from './WorkflowMetadataManager';
+export * from './WorkflowManager';
