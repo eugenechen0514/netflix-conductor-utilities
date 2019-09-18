@@ -1,11 +1,9 @@
 # netflix-conductor-utilities
+in progress...
 
 a simple lib for worker of Netflix conductor
 
 # install
 
-npm install conductor-nodejs-worker
+npm install netflix-conductor-utilities
 
-# example
-
-see `example.js`
