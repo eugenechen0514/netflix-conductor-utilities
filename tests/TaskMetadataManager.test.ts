@@ -1,6 +1,4 @@
-import chai, { expect } from 'chai';
 import TaskMetadataManager from "../src/TaskMetadataManager";
-import {Ta} from '../src'
 
 describe('TaskMetadata', () => {
     let sdk: TaskMetadataManager;

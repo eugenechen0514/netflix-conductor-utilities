@@ -1,8 +1,9 @@
 {
   "name": "netflix-conductor-utilities",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Netflix conductor utilities",
   "main": "dist/index.js",
+  "types": "types/main.d.ts",
   "scripts": {
     "dev": "tsc -p ./tsconfig.json -w",
     "dist": "tsc -p ./tsconfig.json -outDir ./dist"
@@ -21,14 +22,10 @@
   },
   "homepage": "https://github.com/eugenechen0514/netflix-conductor-utilities",
   "dependencies": {
-    "axios": "^0.19.0",
-    "p-forever": "^2.1.0",
-    "sleep-promise": "^8.0.1"
+    "axios": "^0.19.0"
   },
   "devDependencies": {
     "@types/node": "^12.7.5",
-    "@types/p-forever": "^2.0.0",
-    "chai": "^4.2.0",
     "typescript": "^3.6.3"
   }
 }
