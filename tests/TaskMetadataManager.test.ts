@@ -1,3 +1,6 @@
+import chai from 'chai';
+const expect = chai.expect;
+
 import TaskMetadataManager from "../src/TaskMetadataManager";
 
 describe('TaskMetadata', () => {
@@ -22,5 +25,30 @@ describe('TaskMetadata', () => {
         });
         task/*?*/
         await sdk.deleteTask(task.name);
+    });
+
+    it('Update a task definition', async () => {
+        const taskName = 'test_task3';
+
+        try {
+            const taskMeta = {
+                name: taskName,
+                inputKeys: ['a']
+            };
+            await sdk.registerTask(taskMeta);
+            let task = await sdk.getTask(taskName);
+            expect(task.inputKeys.length).be.eq(1);
+
+            // update
+            taskMeta.inputKeys.push('b');
+            await sdk.updateTask(taskMeta);
+
+            task = await sdk.getTask(taskName);
+            expect(task.inputKeys.length).be.eq(2);
+        } catch (e) {
+
+        } finally {
+            await sdk.deleteTask(taskName);
+        }
     });
 });

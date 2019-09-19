@@ -44,6 +44,11 @@ class TaskMetadataManager {
         const {data} = await this.client.delete<TaskDefinition>(`/metadata/taskdefs/${taskType}`);
         return data;
     }
+
+    async updateTask(task: TaskMetadataDefinition) {
+        await this.client.put<TaskDefinition>(`/metadata/taskdefs`, task);
+        return this.getTask(task.name);
+    }
 }
 
 export default TaskMetadataManager;
