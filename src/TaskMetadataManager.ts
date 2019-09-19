@@ -49,6 +49,27 @@ class TaskMetadataManager {
         await this.client.put<void>(`/metadata/taskdefs`, task);
         return this.getTask(task.name);
     }
+
+    async isExist(name: string) {
+        try {
+            await this.getTask(name);
+            return true;
+        } catch (e) {
+            // Task metadata is not exist
+            console.log(e);
+            return false;
+        }
+    }
+
+    async registerOrUpdateTask(task: TaskMetadataDefinition) {
+        const isExist = await this.isExist(task.name);
+        if(isExist) {
+            await this.updateTask(task);
+        } else {
+            await this.registerTask(task);
+        }
+        return this.getTask(task.name);
+    }
 }
 
 export default TaskMetadataManager;
