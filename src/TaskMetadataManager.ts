@@ -46,7 +46,7 @@ class TaskMetadataManager {
     }
 
     async updateTask(task: TaskMetadataDefinition) {
-        await this.client.put<TaskDefinition>(`/metadata/taskdefs`, task);
+        await this.client.put<void>(`/metadata/taskdefs`, task);
         return this.getTask(task.name);
     }
 }

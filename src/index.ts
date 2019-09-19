@@ -154,7 +154,7 @@ export interface WorkflowMetadataDefinition {
      *
      * Must be 2
      */
-    schemaVersion: number,
+    schemaVersion?: number,
 
     /**
      * Boolean flag to allow Workflow restarts
