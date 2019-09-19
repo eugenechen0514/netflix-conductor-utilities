@@ -33,7 +33,8 @@ class WorkflowMetadataManager {
     getWorkflow(name, version) {
         return __awaiter(this, void 0, void 0, function* () {
             let suffix = (version !== undefined) ? `?version=${version}` : '';
-            const { data } = yield this.client.get(`/metadata/workflow/${name}${suffix}`);
+            const url = `/metadata/workflow/${name}${suffix}`;
+            const { data } = yield this.client.get(url);
             return data;
         });
     }
@@ -43,6 +44,14 @@ class WorkflowMetadataManager {
             const workflowObject = yield this.getWorkflow(workflow.name);
             assert_1.default(workflowObject.name === workflow.name, 'Create a workflow, but can not find workflow');
             return workflowObject;
+        });
+    }
+    registerOrUpdateWorkflow(workflow) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const name = workflow.name;
+            const version = workflow.version;
+            yield this.client.put(`/metadata/workflow`, [workflow]);
+            return this.getWorkflow(name, version);
         });
     }
 }

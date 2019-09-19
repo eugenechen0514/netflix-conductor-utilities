@@ -55,6 +55,12 @@ class TaskMetadataManager {
             return data;
         });
     }
+    updateTask(task) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.client.put(`/metadata/taskdefs`, task);
+            return this.getTask(task.name);
+        });
+    }
 }
 exports.TaskMetadataManager = TaskMetadataManager;
 exports.default = TaskMetadataManager;
