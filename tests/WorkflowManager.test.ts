@@ -6,10 +6,9 @@ describe('WorkflowMetadata', () => {
         sdk = new WorkflowManager({apiEndpoint: 'http://localhost:8080/api/'});
     });
 
-
     it('Start workflow request', async () => {
         const workflow = await sdk.startWorkflow({
-            name: 'test_wf1568787016711',
+            name: 'kitchensink',
         });
         workflow/*?*/
     });
