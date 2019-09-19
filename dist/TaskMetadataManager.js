@@ -61,6 +61,31 @@ class TaskMetadataManager {
             return this.getTask(task.name);
         });
     }
+    isExist(name) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.getTask(name);
+                return true;
+            }
+            catch (e) {
+                // Task metadata is not exist
+                console.log(e);
+                return false;
+            }
+        });
+    }
+    registerOrUpdateTask(task) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const isExist = yield this.isExist(task.name);
+            if (isExist) {
+                yield this.updateTask(task);
+            }
+            else {
+                yield this.registerTask(task);
+            }
+            return this.getTask(task.name);
+        });
+    }
 }
 exports.TaskMetadataManager = TaskMetadataManager;
 exports.default = TaskMetadataManager;
