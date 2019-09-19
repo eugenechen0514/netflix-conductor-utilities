@@ -1,3 +1,6 @@
+import chai from 'chai';
+const expect = chai.expect;
+
 import WorkflowMetadataManager from "../src/WorkflowMetadataManager";
 import {WorkflowTaskType} from "../src";
 
@@ -27,8 +30,31 @@ describe('WorkflowMetadata', () => {
                     "type": WorkflowTaskType.simple,
                 }
             ],
-            schemaVersion: 2,
         });
         workflow/*?*/
+    });
+    it('Update workflow', async () => {
+        const workflowName = 'test_workflow';
+        const workflowMetadata = {
+            name: workflowName,
+            tasks: [
+                {
+                    name: 'task_16',
+                    taskReferenceName: 'task_16_in_wf',
+                    type: WorkflowTaskType.simple,
+                }
+            ],
+        };
+
+        try {
+            let workflow = await sdk.registerOrUpdateWorkflow(workflowMetadata);
+            workflowMetadata.tasks[0].name = 'task_17';
+            workflow = await sdk.registerOrUpdateWorkflow(workflowMetadata);
+            expect(workflow.tasks[0].name).be.eq("task_17");
+        } catch (e) {
+            e/*?*/
+
+            throw e;
+        }
     });
 });

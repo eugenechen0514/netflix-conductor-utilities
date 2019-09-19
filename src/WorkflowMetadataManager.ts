@@ -25,7 +25,8 @@ class WorkflowMetadataManager {
 
     async getWorkflow(name: string, version?: number) {
         let suffix = (version !== undefined) ? `?version=${version}` : '';
-        const {data} = await this.client.get<WorkflowDefinition>(`/metadata/workflow/${name}${suffix}`);
+        const url = `/metadata/workflow/${name}${suffix}`;
+        const {data} = await this.client.get<WorkflowDefinition>(url);
         return data;
     }
 
@@ -34,6 +35,13 @@ class WorkflowMetadataManager {
         const workflowObject = await this.getWorkflow(workflow.name);
         assert(workflowObject.name === workflow.name, 'Create a workflow, but can not find workflow');
         return workflowObject;
+    }
+
+    async registerOrUpdateWorkflow(workflow: WorkflowMetadataDefinition) {
+        const name = workflow.name;
+        const version = workflow.version;
+        await this.client.put<void>(`/metadata/workflow`, [workflow]);
+        return this.getWorkflow(name, version);
     }
 }
 
