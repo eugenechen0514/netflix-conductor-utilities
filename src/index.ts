@@ -251,6 +251,8 @@ export interface Workflow {
     workflowType: string,
     workflowVersion: number,
     tasks: Task[],
+    input?: object,
+    output?: object,
 }
 
 export interface Task {
