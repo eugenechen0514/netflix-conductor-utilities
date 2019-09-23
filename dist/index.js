@@ -41,4 +41,5 @@ var TaskState;
 __export(require("./TaskMetadataManager"));
 __export(require("./WorkflowMetadataManager"));
 __export(require("./WorkflowManager"));
+__export(require("./ConductorWorker"));
 //# sourceMappingURL=index.js.map
