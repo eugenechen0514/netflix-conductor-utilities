@@ -1,3 +1,4 @@
+import debugFun  from 'debug';
 import {EventEmitter} from 'events';
 import {forever, END} from 'run-forever';
 import delay from 'delay';
@@ -5,8 +6,8 @@ import delay from 'delay';
 import axios, {AxiosInstance} from 'axios';
 import {PollTask, TaskState, UpdatingTaskResult} from "../";
 
-const debug = console.log;
-const debugError = console.error;
+const debug = debugFun('ConductorWorker');
+const debugError = debugFun('ConductorWorker');
 
 export interface ConductorWorkerOptions {
   url?: string;

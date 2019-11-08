@@ -12,13 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const debug_1 = __importDefault(require("debug"));
 const events_1 = require("events");
 const run_forever_1 = require("run-forever");
 const delay_1 = __importDefault(require("delay"));
 const axios_1 = __importDefault(require("axios"));
 const __1 = require("../");
-const debug = console.log;
-const debugError = console.error;
+const debug = debug_1.default('ConductorWorker');
+const debugError = debug_1.default('ConductorWorker');
 class ConductorWorker extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
