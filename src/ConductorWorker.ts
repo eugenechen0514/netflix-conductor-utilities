@@ -72,7 +72,7 @@ class ConductorWorker extends EventEmitter {
             return {
               ...baseTaskInfo,
               callbackAfterSeconds: (Date.now() - t1) / 1000,
-              reasonForIncompletion: err, // If failed, reason for failure
+              reasonForIncompletion: String(err), // If failed, reason for failure
               status: TaskState.failed,
             };
           })

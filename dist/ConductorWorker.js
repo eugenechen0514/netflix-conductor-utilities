@@ -57,7 +57,7 @@ class ConductorWorker extends events_1.EventEmitter {
                 return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, outputData: output, status: __1.TaskState.completed });
             })
                 .catch((err) => {
-                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, reasonForIncompletion: err, status: __1.TaskState.failed });
+                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, reasonForIncompletion: String(err), status: __1.TaskState.failed });
             })
                 .then(updateTaskInfo => {
                 // Return response, add logs
