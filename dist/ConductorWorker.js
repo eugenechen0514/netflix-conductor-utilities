@@ -77,9 +77,10 @@ class ConductorWorker extends events_1.EventEmitter {
         run_forever_1.forever(() => __awaiter(this, void 0, void 0, function* () {
             if (this.working) {
                 yield delay_1.default(interval);
+                debug(`Poll "${taskType}" task`);
                 this.pollAndWork(taskType, fn)
                     .then(data => {
-                    debug(data);
+                    // debug(data);
                 }, (err) => {
                     debugError(err);
                 });

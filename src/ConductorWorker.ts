@@ -96,9 +96,10 @@ class ConductorWorker extends EventEmitter {
     forever(async () => {
       if (this.working) {
         await delay(interval);
+        debug(`Poll "${taskType}" task`);
         this.pollAndWork(taskType, fn)
             .then(data => {
-              debug(data);
+              // debug(data);
             }, (err) => {
               debugError(err)
             })
