@@ -80,7 +80,7 @@ class ConductorWorker extends events_1.EventEmitter {
                 yield delay_1.default(interval);
                 debug(`Poll "${taskType}" task`);
                 this.pollAndWork(taskType, fn)
-                    .then(data => {
+                    .then((data) => {
                     // debug(data);
                 }, (err) => {
                     debugError(err);
