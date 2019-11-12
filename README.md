@@ -8,10 +8,68 @@ a simple lib for worker of Netflix conductor
 npm install netflix-conductor-utilities
 ```
 
-# `ConductorWorker` Usage
+# Usage
+
+Sample code written by *TypeScript* and they are in some async function.
+
+1. Metadata Manager
+    1. [TaskMetadataManager](#TaskMetadataManager)
+    2. [WorkflowMetadataManager](#WorkflowMetadataManager)
+2. Utils
+    1. [WorkflowManager](#WorkflowManager)
+    2. [ConductorWorker](#ConductorWorker)
+     
+
+## Metadata Manager
+
+
+### TaskMetadataManager
 
 ``` typescript
-# TypeScript 3.7.2
+import {TaskMetadataManager} from 'netflix-conductor-utilities';
+
+const taskMetaManager = new TaskMetadataManager({apiEndpoint: 'http://localhost:8080/api/'});
+
+await taskMetaManager.registerTasks([{
+    name: 'a_task_id',
+}]);
+```
+
+### WorkflowMetadataManager
+
+``` typescript
+import {WorkflowTaskType, WorkflowMetadataManager} from 'netflix-conductor-utilities';
+
+const workflowMetaManager = new WorkflowMetadataManager({apiEndpoint: 'http://localhost:8080/api/'});
+const workflow = await workflowMetaManager.registerWorkflow({
+    name: 'test_wf',
+    tasks: [
+        {
+            "name": "a_task_id",
+            "taskReferenceName": "a_task_id_in_wf",
+            "type": WorkflowTaskType.simple,
+        }
+    ],
+});
+```
+
+## Utils
+
+
+### WorkflowManager
+
+``` typescript
+import {WorkflowManager} from 'netflix-conductor-utilities';
+
+const workflowManager = new WorkflowManager({apiEndpoint: 'http://localhost:8080/api/'});
+const workflow = await workflowManager.startWorkflow({
+    name: 'test_wf',
+});
+```
+
+### ConductorWorker Usage
+
+``` typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
 // 'a_task_id' worker
@@ -22,7 +80,7 @@ const worker = new ConductorWorker<string>({
 
 // start
 worker.start('a_task_id', (input: {message: string}) => {
-    return input.message;
+    return Promise.resolve({message});
 }, 5000);
 
 // stop
@@ -30,3 +88,4 @@ setTimeout(() => {
     worker.stop();
 }, 20000)
 ```
+

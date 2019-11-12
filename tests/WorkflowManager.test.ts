@@ -1,6 +1,6 @@
 import WorkflowManager from "../src/WorkflowManager";
 
-describe('WorkflowMetadata', () => {
+describe('WorkflowManager', () => {
     let sdk: WorkflowManager;
     before(() => {
         sdk = new WorkflowManager({apiEndpoint: 'http://localhost:8080/api/'});
