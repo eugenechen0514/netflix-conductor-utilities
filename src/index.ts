@@ -177,7 +177,20 @@ export interface WorkflowDefinition extends WorkflowMetadataDefinition {
 
 export enum WorkflowTaskType {
     simple= 'SIMPLE',
-    //TODO: system task types
+    subWorkflow = 'SUB_WORKFLOW',
+    decision= 'DECISION',
+    event = 'EVENT',
+    http = 'HTTP',
+    forkJoin = 'FORK_JOIN',
+    forkJoinDynamic = 'FORK_JOIN_DYNAMIC',
+    join = 'JOIN',
+    exclusiveJoin = 'EXCLUSIVE_JOIN',
+    wait = 'WAIT',
+    dynamic = 'DYNAMIC',
+    lambda = 'LAMBDA',
+    terminate = 'TERMINATE',
+    kafkaPublish = 'KAFKA_PUBLISH',
+    doWhile = 'DO_WHILE',
 }
 
 export interface WorkflowTaskMetadata {

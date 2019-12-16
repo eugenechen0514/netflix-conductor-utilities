@@ -17,7 +17,20 @@ var TaskRetryLogic;
 var WorkflowTaskType;
 (function (WorkflowTaskType) {
     WorkflowTaskType["simple"] = "SIMPLE";
-    //TODO: system task types
+    WorkflowTaskType["subWorkflow"] = "SUB_WORKFLOW";
+    WorkflowTaskType["decision"] = "DECISION";
+    WorkflowTaskType["event"] = "EVENT";
+    WorkflowTaskType["http"] = "HTTP";
+    WorkflowTaskType["forkJoin"] = "FORK_JOIN";
+    WorkflowTaskType["forkJoinDynamic"] = "FORK_JOIN_DYNAMIC";
+    WorkflowTaskType["join"] = "JOIN";
+    WorkflowTaskType["exclusiveJoin"] = "EXCLUSIVE_JOIN";
+    WorkflowTaskType["wait"] = "WAIT";
+    WorkflowTaskType["dynamic"] = "DYNAMIC";
+    WorkflowTaskType["lambda"] = "LAMBDA";
+    WorkflowTaskType["terminate"] = "TERMINATE";
+    WorkflowTaskType["kafkaPublish"] = "KAFKA_PUBLISH";
+    WorkflowTaskType["doWhile"] = "DO_WHILE";
 })(WorkflowTaskType = exports.WorkflowTaskType || (exports.WorkflowTaskType = {}));
 var WorkflowStatus;
 (function (WorkflowStatus) {
