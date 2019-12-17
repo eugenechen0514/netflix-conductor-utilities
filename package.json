@@ -1,13 +1,13 @@
 {
   "name": "netflix-conductor-utilities",
-  "version": "0.3.10",
+  "version": "0.3.13",
   "description": "Netflix conductor utilities",
   "main": "dist/index.js",
   "types": "types/main.d.ts",
   "scripts": {
     "dev": "tsc -p ./tsconfig.json -w",
     "dist": "tsc -p ./tsconfig.json -outDir ./dist",
-    "deploy": "npm upgrade & npm run dist & npm publish"
+    "deploy": "npm i & npm upgrade & npm run dist & npm publish"
   },
   "repository": {
     "type": "git",
