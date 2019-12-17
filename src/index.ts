@@ -130,7 +130,7 @@ export interface WorkflowMetadataDefinition {
     /**
      * An array of task definitions as described below.
      */
-    tasks: WorkflowTaskMetadata[],
+    tasks: (WorkflowTaskMetadata | SubWorkflowTaskMetadata)[],
 
     /**
      * List of input parameters. Used for documenting the required inputs to workflow
@@ -233,6 +233,17 @@ export interface WorkflowTaskMetadata {
      * See [Task Domains for more information](https://netflix.github.io/conductor/configuration/taskdomains/).
      */
     domain?: object,
+}
+
+/**
+ * See [Sub Workflow](https://netflix.github.io/conductor/configuration/systask/#sub-workflow)
+ */
+export interface SubWorkflowTaskMetadata extends WorkflowTaskMetadata {
+    subWorkflowParam: {
+        name: string,
+        version: number,
+        taskToDomain?: object,
+    }
 }
 
 export interface WorkflowTask extends WorkflowTaskMetadata {
