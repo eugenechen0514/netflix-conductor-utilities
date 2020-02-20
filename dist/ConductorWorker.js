@@ -17,7 +17,7 @@ const events_1 = require("events");
 const run_forever_1 = require("run-forever");
 const delay_1 = __importDefault(require("delay"));
 const axios_1 = __importDefault(require("axios"));
-const __1 = require("../");
+const _1 = require("./");
 const debug = debug_1.default('ConductorWorker');
 const debugError = debug_1.default('ConductorWorker');
 class ConductorWorker extends events_1.EventEmitter {
@@ -43,10 +43,7 @@ class ConductorWorker extends events_1.EventEmitter {
             const input = pullTask.inputData;
             const { workflowInstanceId, taskId } = pullTask;
             // Ack the Task
-            const { data: obj } = yield this.client.post(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
-            if (obj !== true) {
-                return;
-            }
+            yield this.client.post(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
             const t1 = Date.now();
             const baseTaskInfo = {
                 workflowInstanceId,
@@ -55,10 +52,10 @@ class ConductorWorker extends events_1.EventEmitter {
             // Working
             return fn(input)
                 .then(output => {
-                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, outputData: output, status: __1.TaskState.completed });
+                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, outputData: output, status: _1.TaskState.completed });
             })
                 .catch((err) => {
-                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, reasonForIncompletion: String(err), status: __1.TaskState.failed });
+                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: (Date.now() - t1) / 1000, reasonForIncompletion: String(err), status: _1.TaskState.failed });
             })
                 .then(updateTaskInfo => {
                 // Return response, add logs
