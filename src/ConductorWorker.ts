@@ -4,7 +4,7 @@ import {forever, END} from 'run-forever';
 import delay from 'delay';
 
 import axios, {AxiosInstance} from 'axios';
-import {PollTask, TaskState, UpdatingTaskResult} from "../";
+import {PollTask, TaskState, UpdatingTaskResult} from "./";
 
 const debug = debugFun('ConductorWorker');
 const debugError = debugFun('ConductorWorker');
@@ -48,10 +48,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
       const { workflowInstanceId, taskId } = pullTask;
 
       // Ack the Task
-      const {data: obj} = await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
-      if (obj !== true) {
-        return;
-      }
+      await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
 
       const t1 = Date.now();
       const baseTaskInfo: UpdatingTaskResult = {
