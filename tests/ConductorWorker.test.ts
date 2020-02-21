@@ -18,18 +18,14 @@ describe('WorkflowManager', function () {
     const workflowMetadataManager = new WorkflowMetadataManager({apiEndpoint: 'http://localhost:8080/api/'});
     const workflowManager = new WorkflowManager({apiEndpoint: 'http://localhost:8080/api/'});
 
-    before(() => {
-    });
+    const taskType = 'test';
+    const wfName = `test_wf_${taskType}`;
 
-    it('Start workflow request', async () => {
-        // arrange
-        const taskType = 'test';
-
+    before(async () => {
         await taskMetadataManager.registerTask({
             name: taskType,
         });
 
-        let wfName = `test_wf_${taskType}`;
         await workflowMetadataManager.registerOrUpdateWorkflow({
             name: wfName,
             tasks: [
@@ -40,7 +36,10 @@ describe('WorkflowManager', function () {
                 }
             ],
         });
+    });
 
+    it('Start workflow request', async () => {
+        // arrange
         const worker = new ConductorWorker({
             url: 'http://localhost:8080', // host
             apiPath: '/api', // base path
@@ -50,7 +49,6 @@ describe('WorkflowManager', function () {
 
         // act
         const fn = () => {
-            console.log('hi')
             return new Promise((resolve, reject) => {
                 const handler = setTimeout(()=>{
                     clearTimeout(handler);
@@ -61,7 +59,6 @@ describe('WorkflowManager', function () {
                 }, 500)
             })
         };
-
         worker.start(taskType, fn, 1000);
 
         await workflowManager.startWorkflow({
