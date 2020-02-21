@@ -13,6 +13,7 @@ export interface ConductorWorkerOptions {
   url?: string;
   apiPath?: string;
   workerid?: string;
+  maxConcurrent?: number;
 }
 
 export type WorkFunction<Result = void> = (input: any) => Promise<Result>;
@@ -23,13 +24,19 @@ class ConductorWorker<Result = void> extends EventEmitter {
   workerid?: string;
   client: AxiosInstance;
   polling: boolean = false;
+  maxConcurrent: number = 1;
+  runningTasks: string[] = [];
 
   constructor(options: ConductorWorkerOptions = {}) {
     super();
-    const {url = 'http://localhost:8080', apiPath = '/api', workerid = undefined} = options;
+    const {url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent} = options;
     this.url = url;
     this.apiPath = apiPath;
     this.workerid = workerid;
+
+    if(maxConcurrent) {
+      this.maxConcurrent = maxConcurrent;
+    }
 
     this.client = axios.create({
       baseURL: this.url,
@@ -39,6 +46,9 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
   pollAndWork(taskType: string, fn: WorkFunction<Result>) { // keep 'function'
     return (async () => {
+      // NOTE: There is a potential problem which is 「poll task」 and 「ack task」 should be as soon as possible,
+      //  if no two workers maybe deal with simultaneously when they poll the same task at the same time.
+
       // Poll for Worker task
       debug(`Poll a "${taskType}" task`);
       const {data: pullTask} = await this.client.get<PollTask | void>(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
@@ -52,6 +62,9 @@ class ConductorWorker<Result = void> extends EventEmitter {
       debug(`Ack the "${taskType}" task`);
       await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
 
+      // Record running task
+      this.runningTasks.push(taskId);
+
       const t1 = Date.now();
       const baseTaskInfo: UpdatingTaskResult = {
         workflowInstanceId,
@@ -59,6 +72,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
       };
 
       // Working
+      debug('Dealing with the task:', {workflowInstanceId, taskId});
       return fn(input)
           .then(output => {
             debug('worker resolve');
@@ -79,8 +93,12 @@ class ConductorWorker<Result = void> extends EventEmitter {
             };
           })
           .then(updateTaskInfo => {
+            // release running task
+            this.runningTasks = this.runningTasks.filter(taskId => taskId !== updateTaskInfo.taskId);
+            debug(`Change the amount of running tasks: ${this.runningTasks.length}`);
+
             // Return response, add logs
-            debug('update task info');
+            debug('update task info: taskId:' + taskId);
             return this.client.post(`${this.apiPath}/tasks/`, updateTaskInfo)
                 .then(result => {
                   // debug(result.data);
@@ -95,16 +113,21 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
   start(taskType: string, fn: WorkFunction<Result>, interval: number = 1000) {
     this.polling = true;
-    debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}`);
+    debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
     forever(async () => {
       if (this.polling) {
         await delay(interval);
-        this.pollAndWork(taskType, fn)
-            .then((data: any) => {
-              // debug(data);
-            }, (err: any) => {
-              debugError(err)
-            })
+        debug(`Check the amount of running tasks: ${this.runningTasks.length}`);
+        if(this.runningTasks.length < this.maxConcurrent) {
+          this.pollAndWork(taskType, fn)
+              .then((data: any) => {
+                // debug(data);
+              }, (err: any) => {
+                debugError(err)
+              });
+        } else {
+          debug(`Skip polling task because the work reaches the max amount of running tasks`);
+        }
       } else {
         debug(`Stop polling: taskType = ${taskType}`);
         return END;
