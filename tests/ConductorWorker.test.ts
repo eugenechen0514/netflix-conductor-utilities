@@ -48,18 +48,15 @@ describe('WorkflowManager', function () {
         let called = false;
 
         // act
-        const fn = () => {
+        worker.start(taskType, () => {
             return new Promise((resolve, reject) => {
                 const handler = setTimeout(()=>{
                     clearTimeout(handler);
                     called = true;
-                    resolve({
-                        result: false,
-                    })
+                    resolve();
                 }, 500)
             })
-        };
-        worker.start(taskType, fn, 1000);
+        }, 1000);
 
         await workflowManager.startWorkflow({
             name: wfName,
