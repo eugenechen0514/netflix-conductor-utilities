@@ -37,14 +37,21 @@ describe('TaskMetadata', () => {
             };
             await sdk.registerTask(taskMeta);
             let task = await sdk.getTask(taskName);
-            expect(task.inputKeys.length).be.eq(1);
+            expect(task.inputKeys).be.not.empty;
+            if(task.inputKeys) {
+                expect(task.inputKeys.length).be.eq(1);
+            }
+
 
             // update
             taskMeta.inputKeys.push('b');
             await sdk.updateTask(taskMeta);
 
             task = await sdk.getTask(taskName);
-            expect(task.inputKeys.length).be.eq(2);
+            expect(task.inputKeys).be.not.empty;
+            if(task.inputKeys) {
+                expect(task.inputKeys.length).be.eq(2);
+            }
         } catch (e) {
 
         } finally {
