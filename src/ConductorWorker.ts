@@ -22,7 +22,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
   apiPath: string;
   workerid?: string;
   client: AxiosInstance;
-  working: boolean = false;
+  polling: boolean = false;
 
   constructor(options: ConductorWorkerOptions = {}) {
     super();
@@ -40,6 +40,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
   pollAndWork(taskType: string, fn: WorkFunction<Result>) { // keep 'function'
     return (async () => {
       // Poll for Worker task
+      debug(`Poll a "${taskType}" task`);
       const {data: pullTask} = await this.client.get<PollTask | void>(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
       if (!pullTask) {
         return;
@@ -48,6 +49,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
       const { workflowInstanceId, taskId } = pullTask;
 
       // Ack the Task
+      debug(`Ack the "${taskType}" task`);
       await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
 
       const t1 = Date.now();
@@ -92,12 +94,11 @@ class ConductorWorker<Result = void> extends EventEmitter {
   }
 
   start(taskType: string, fn: WorkFunction<Result>, interval: number = 1000) {
-    this.working = true;
-    debug(`Start worker: taskType = ${taskType}, poll-interval = ${interval}`);
+    this.polling = true;
+    debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}`);
     forever(async () => {
-      if (this.working) {
+      if (this.polling) {
         await delay(interval);
-        debug(`Poll "${taskType}" task`);
         this.pollAndWork(taskType, fn)
             .then((data: any) => {
               // debug(data);
@@ -105,14 +106,14 @@ class ConductorWorker<Result = void> extends EventEmitter {
               debugError(err)
             })
       } else {
-        debug(`End worker: taskType = ${taskType}`);
+        debug(`Stop polling: taskType = ${taskType}`);
         return END;
       }
     })
   }
 
   stop() {
-    this.working = false
+    this.polling = false
   }
 }
 
