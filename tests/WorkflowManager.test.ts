@@ -7,9 +7,12 @@ describe('WorkflowManager', () => {
     });
 
     it('Start workflow request', async () => {
-        const workflow = await sdk.startWorkflow({
+        let workflow = await sdk.startWorkflow({
             name: 'kitchensink',
         });
-        workflow/*?*/
+
+        workflow = await sdk.terminateWorkflow(workflow.workflowId);
+
+        await sdk.removeWorkflow(workflow.workflowId);
     });
 });
