@@ -20,14 +20,13 @@ const worker = new ConductorWorker({
 });
 
 const taskType = 'test';
+const wfName = `test_wf_${taskType}`;
 
 (async () => {
     await taskMetadataManager.registerTask({
         name: taskType,
     });
-
-    let wfName = `test_wf_${taskType}`;
-    await workflowMetadataManager.registerWorkflow({
+    await workflowMetadataManager.registerOrUpdateWorkflow({
         name: wfName,
         tasks: [
             {
@@ -38,24 +37,24 @@ const taskType = 'test';
         ],
     });
 
-    const fn = (input) => {
+    console.log('Work polling');
+    worker.start(taskType, (input) => {
+        console.log('deal with the task');
         return new Promise((resolve, reject) => {
             const handler = setTimeout(()=>{
                 clearTimeout(handler);
-                resolve({
-                    result: false,
-                })
+                resolve();
             }, 3000)
         })
-    };
+    });
 
-    worker.start(taskType, fn);
-
+    console.log('Start a workflow');
     await workflowManager.startWorkflow({
         name: wfName,
     });
 
     await delay(10000);
+    console.log('Stop worker');
     worker.stop();
 })()
     .then(console.log);
