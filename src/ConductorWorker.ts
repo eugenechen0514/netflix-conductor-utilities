@@ -24,7 +24,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
   workerid?: string;
   client: AxiosInstance;
   polling: boolean = false;
-  maxConcurrent: number = 1;
+  maxConcurrent: number = Number.POSITIVE_INFINITY;
   runningTasks: string[] = [];
 
   constructor(options: ConductorWorkerOptions = {}) {
