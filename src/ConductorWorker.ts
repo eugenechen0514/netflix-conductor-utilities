@@ -6,8 +6,8 @@ import delay from 'delay';
 import axios, {AxiosInstance} from 'axios';
 import {PollTask, TaskState, UpdatingTaskResult} from "./";
 
-const debug = debugFun('ConductorWorker');
-const debugError = debugFun('ConductorWorker');
+const debug = debugFun('ConductorWorker[DEBUG]');
+const debugError = debugFun('ConductorWorker[Error]');
 
 export interface ConductorWorkerOptions {
   url?: string;
@@ -59,6 +59,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
       // Working
       return fn(input)
           .then(output => {
+            debug('worker resolve');
             return {
               ...baseTaskInfo,
               callbackAfterSeconds: (Date.now() - t1) / 1000,
@@ -67,6 +68,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
             };
           })
           .catch((err) => {
+            debug('worker reject', err);
             return {
               ...baseTaskInfo,
               callbackAfterSeconds: (Date.now() - t1) / 1000,
@@ -76,9 +78,10 @@ class ConductorWorker<Result = void> extends EventEmitter {
           })
           .then(updateTaskInfo => {
             // Return response, add logs
+            debug('update task info');
             return this.client.post(`${this.apiPath}/tasks/`, updateTaskInfo)
                 .then(result => {
-                  debug(result);
+                  // debug(result.data);
                 })
                 .catch(err => {
                   debugError(err); // resolve
