@@ -59,15 +59,12 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
   pollAndWork(taskType: string, fn: WorkFunction<Result>) { // keep 'function'
     return (async () => {
-      // NOTE: There is a potential problem which is 「poll task」 and 「ack task」 should be as soon as possible,
-      //  if no two workers maybe deal with simultaneously when they poll the same task at the same time.
-
       // Poll for Worker task
-      debug(`Poll a "${taskType}" task`);
       const {data: pullTask} = await this.client.get<PollTask | void>(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
       if (!pullTask) {
         return;
       }
+      debug(`Poll a "${taskType}" task`, pullTask);
       const input = pullTask.inputData;
       const { workflowInstanceId, taskId } = pullTask;
 
@@ -100,7 +97,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
             debug(`Update runningTask:`, runningTask);
             return {
               ...baseTaskInfo,
-              callbackAfterSeconds: (Date.now() - runningTask.start) / 1000,
+              callbackAfterSeconds: 0,
               outputData: output,
               status: TaskState.completed,
             };
@@ -112,7 +109,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
             debug(`Update runningTask:`, runningTask);
             return {
               ...baseTaskInfo,
-              callbackAfterSeconds: (Date.now() - runningTask.start) / 1000,
+              callbackAfterSeconds: 0,
               reasonForIncompletion: String(err), // If failed, reason for failure
               status: TaskState.failed,
             };
