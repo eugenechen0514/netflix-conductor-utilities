@@ -1,6 +1,6 @@
 const config = require('./config');
 const {ConductorWorker} = require('../build');
-const fakeTaskProcessingTime = 60000;
+const fakeTaskProcessingTime = 10000;
 
 function delay(ms = 10000) {
     return new Promise((resolve, reject) => {
