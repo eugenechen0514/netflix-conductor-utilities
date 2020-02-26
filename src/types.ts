@@ -26,6 +26,11 @@ export interface TaskMetadataDefinition {
      * Description of the task
      */
     description?: string,
+        
+    /**
+     * Email of owner
+     */
+    ownerEmail: string;
 
     /**
      * No. of retries to attempt when a Task is marked as failure
@@ -119,6 +124,11 @@ export interface WorkflowMetadataDefinition {
      * Description of the workflow
      */
     description?: string,
+
+    /**
+     * Email of owner
+     */
+    ownerEmail: string;
 
     /**
      * Numeric field used to identify the version of the schema. Use incrementing numbers
