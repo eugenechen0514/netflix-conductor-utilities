@@ -26,7 +26,7 @@ export interface TaskMetadataDefinition {
      * Description of the task
      */
     description?: string,
-        
+
     /**
      * Email of owner
      */
@@ -110,6 +110,8 @@ export interface TaskDefinition extends TaskMetadataDefinition {
     createTime?: number,
 }
 
+type AnyWorkflowTaskMetadata = WorkflowTaskMetadata | SubWorkflowTaskMetadata | DecisionTaskMetadata;
+
 /**
  * See: https://netflix.github.io/conductor/configuration/workflowdef/#workflow-definition
  */
@@ -140,7 +142,7 @@ export interface WorkflowMetadataDefinition {
     /**
      * An array of task definitions as described below.
      */
-    tasks: (WorkflowTaskMetadata | SubWorkflowTaskMetadata)[],
+    tasks: AnyWorkflowTaskMetadata[],
 
     /**
      * List of input parameters. Used for documenting the required inputs to workflow
@@ -254,6 +256,20 @@ export interface SubWorkflowTaskMetadata extends WorkflowTaskMetadata {
         version: number,
         taskToDomain?: object,
     }
+}
+
+export interface DecisionCaseMap {
+    [caseName: string]: AnyWorkflowTaskMetadata[]
+}
+
+/**
+ * See [Decision](https://netflix.github.io/conductor/configuration/systask/#decision)
+ */
+export interface DecisionTaskMetadata extends WorkflowTaskMetadata {
+    caseValueParam: string,
+    decisionCases: DecisionCaseMap,
+    defaultCase?: AnyWorkflowTaskMetadata[],
+    caseExpression: string,
 }
 
 export interface WorkflowTask extends WorkflowTaskMetadata {
