@@ -110,7 +110,16 @@ export interface TaskDefinition extends TaskMetadataDefinition {
     createTime?: number,
 }
 
-type AnyWorkflowTaskMetadata = WorkflowTaskMetadata | SubWorkflowTaskMetadata | DecisionTaskMetadata;
+type AnyWorkflowTaskMetadata =
+    WorkflowTaskMetadata
+    | SubWorkflowTaskMetadata
+    | DecisionTaskMetadata
+    | DynamicForkTaskMetadata
+    | ForkTaskMetadata
+    | EventTaskMetadata
+    | HTTPTaskMetadata
+    | ExclusiveJoinTaskMetadata
+    | JoinTaskMetadata;
 
 /**
  * See: https://netflix.github.io/conductor/configuration/workflowdef/#workflow-definition
@@ -270,6 +279,60 @@ export interface DecisionTaskMetadata extends WorkflowTaskMetadata {
     decisionCases: DecisionCaseMap,
     defaultCase?: AnyWorkflowTaskMetadata[],
     caseExpression: string,
+}
+
+/**
+ * See [Dynamic Fork](https://netflix.github.io/conductor/configuration/systask/#dynamic-fork)
+ */
+export interface DynamicForkTaskMetadata extends WorkflowTaskMetadata {
+    dynamicForkTasksParam: string,
+    dynamicForkTasksInputParamName: string,
+}
+
+/**
+ * See [Fork](https://netflix.github.io/conductor/configuration/systask/#Fork)
+ */
+export interface ForkTaskMetadata extends WorkflowTaskMetadata {
+    forkTasks: AnyWorkflowTaskMetadata[],
+}
+
+/**
+ * See [Event](https://netflix.github.io/conductor/configuration/systask/#event)
+ */
+export interface EventTaskMetadata extends WorkflowTaskMetadata {
+    sink: string,
+    asyncComplete: boolean,
+}
+
+/**
+ * See [HTTP](https://netflix.github.io/conductor/configuration/systask/#http)
+ */
+export interface HTTPTaskMetadata extends WorkflowTaskMetadata {
+    http_request: {
+        uri: string,
+        method: string,
+        accept?: string,
+        contentType?: string,
+        headers?: object,
+        body?: any,
+        vipAddress?: string,
+        asyncComplete?: boolean,
+    },
+}
+
+/**
+ * See [Join](https://netflix.github.io/conductor/configuration/systask/#join)
+ */
+export interface JoinTaskMetadata extends WorkflowTaskMetadata {
+    joinOn: string[],
+}
+
+/**
+ * See [Exclusive Join](https://netflix.github.io/conductor/configuration/systask/#exclusive-join)
+ */
+export interface ExclusiveJoinTaskMetadata extends WorkflowTaskMetadata {
+    joinOn: string[],
+    defaultExclusiveJoinTask: string[],
 }
 
 export interface WorkflowTask extends WorkflowTaskMetadata {
