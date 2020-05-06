@@ -292,8 +292,8 @@ export interface DynamicForkTaskMetadata extends WorkflowTaskMetadata {
 /**
  * See [Fork](https://netflix.github.io/conductor/configuration/systask/#Fork)
  */
-export interface ForkTaskMetadata extends WorkflowTaskMetadata {
-    forkTasks: AnyWorkflowTaskMetadata[],
+export interface ForkTaskMetadata {
+    forkTasks: AnyWorkflowTaskMetadata[][],
 }
 
 /**
