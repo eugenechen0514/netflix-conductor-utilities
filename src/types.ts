@@ -262,7 +262,7 @@ export interface WorkflowTaskMetadata {
 export interface SubWorkflowTaskMetadata extends WorkflowTaskMetadata {
     subWorkflowParam: {
         name: string,
-        version: number,
+        version?: number,
         taskToDomain?: object,
     }
 }
