@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/eugenechen0514/netflix-conductor-utilities",
   "dependencies": {
-    "axios": "^0.19.0",
+    "axios": "^0.21.1",
     "debug": "^4.1.1",
     "delay": "^4.3.0",
     "run-forever": "^0.1.2"
