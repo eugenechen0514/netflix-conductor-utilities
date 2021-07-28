@@ -21,6 +21,7 @@ describe('TaskMetadata', () => {
 
     it('Delete a task definition', async () => {
         const task = await sdk.registerTask({
+            ownerEmail: 'yujiechen0514@gmail.com',
             name: 'test_task2',
         });
         task/*?*/
@@ -32,6 +33,7 @@ describe('TaskMetadata', () => {
 
         try {
             const taskMeta = {
+                ownerEmail: 'yujiechen0514@gmail.com',
                 name: taskName,
                 inputKeys: ['a']
             };

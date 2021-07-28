@@ -22,6 +22,7 @@ describe('WorkflowMetadata', () => {
 
     it('Register new workflow', async () => {
         const workflow = await sdk.registerWorkflow({
+            ownerEmail: 'yujiechen0514@gmail.com',
             name: 'test_wf' + new Date().getTime(),
             tasks: [
                 {
@@ -36,6 +37,7 @@ describe('WorkflowMetadata', () => {
     it('Update workflow', async () => {
         const workflowName = 'test_workflow';
         const workflowMetadata = {
+            ownerEmail: 'yujiechen0514@gmail.com',
             name: workflowName,
             tasks: [
                 {

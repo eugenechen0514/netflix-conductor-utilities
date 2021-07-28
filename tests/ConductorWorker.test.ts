@@ -23,10 +23,12 @@ describe('WorkflowManager', function () {
 
     before(async () => {
         await taskMetadataManager.registerTask({
+            ownerEmail: 'yujiechen0514@gmail.com',
             name: taskType,
         });
 
         await workflowMetadataManager.registerOrUpdateWorkflow({
+            ownerEmail: 'yujiechen0514@gmail.com',
             name: wfName,
             tasks: [
                 {
