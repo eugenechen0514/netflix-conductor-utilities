@@ -12,12 +12,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.RunningTask = exports.ConductorWorker = void 0;
 const debug_1 = __importDefault(require("debug"));
 const events_1 = require("events");
 const run_forever_1 = require("run-forever");
 const delay_1 = __importDefault(require("delay"));
 const axios_1 = __importDefault(require("axios"));
 const _1 = require("./");
+const RunningTask_1 = __importDefault(require("./RunningTask"));
+exports.RunningTask = RunningTask_1.default;
 const debug = debug_1.default('ConductorWorker[DEBUG]');
 const debugError = debug_1.default('ConductorWorker[Error]');
 class ConductorWorker extends events_1.EventEmitter {
@@ -27,10 +30,11 @@ class ConductorWorker extends events_1.EventEmitter {
         this.maxConcurrent = Number.POSITIVE_INFINITY;
         this.runningTasks = [];
         this.heartbeatInterval = 300000; //default: 5 min
-        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval } = options;
+        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {} } = options;
         this.url = url;
         this.apiPath = apiPath;
         this.workerid = workerid;
+        this.runningTaskOptions = runningTaskOptions;
         if (maxConcurrent) {
             this.maxConcurrent = maxConcurrent;
         }
@@ -62,35 +66,35 @@ class ConductorWorker extends events_1.EventEmitter {
             debug(`Polled a "${taskType}" task: `, pullTask);
             const input = pullTask.inputData;
             const { workflowInstanceId, taskId } = pullTask;
-            // Ack the Task
+            // Ack the task
             debug(`Ack the "${taskType}" task`);
             yield this.client.post(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
             // Record running task
-            const runningTask = {
-                taskId,
-                done: false,
-                start: Date.now(),
-            };
-            this.runningTasks.push(runningTask);
-            debug(`Create runningTask: `, runningTask);
             const baseTaskInfo = {
                 workflowInstanceId,
                 taskId,
             };
+            const runningTask = {
+                taskId,
+                task: new RunningTask_1.default(this, Object.assign(Object.assign({}, baseTaskInfo), this.runningTaskOptions)),
+            };
+            this.runningTasks.push(runningTask);
+            debug(`Create runningTask: `, runningTask);
             // Working
             debug('Dealing with the task:', { workflowInstanceId, taskId });
             // const runningTask = this.__forceFindOneProcessingTask(taskId);
-            return fn(input)
+            runningTask.task.startTask();
+            return fn(input, runningTask.task)
                 .then(output => {
                 debug('worker resolve');
-                runningTask.done = true;
-                debug(`Update runningTask:`, runningTask);
+                runningTask.task.stopTask();
+                debug(`Resolve runningTask:`, runningTask);
                 return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: 0, outputData: output, status: _1.TaskState.completed });
             })
                 .catch((err) => {
                 debug('worker reject', err);
-                runningTask.done = true;
-                debug(`Update runningTask:`, runningTask);
+                runningTask.task.stopTask();
+                debug(`Reject runningTask:`, runningTask);
                 return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: 0, reasonForIncompletion: String(err), status: _1.TaskState.failed });
             })
                 .then(updateTaskInfo => {
@@ -99,7 +103,7 @@ class ConductorWorker extends events_1.EventEmitter {
                 debug(`Change the amount of running tasks: ${this.runningTasks.length}`);
                 // Return response, add logs
                 debug('update task info: taskId:' + taskId);
-                return this.client.post(`${this.apiPath}/tasks/`, updateTaskInfo)
+                return runningTask.task.updateTaskInfo(updateTaskInfo)
                     .then(result => {
                     // debug(result.data);
                 })
