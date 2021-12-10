@@ -67,6 +67,16 @@ class RunningTask<Result = void> {
         this.__setKeepTaskTimerForNotifyConductor();
     }
 
+    async sendLog(msg: string, status: TaskState = TaskState.inProgress) {
+        return this.updateTaskInfo({
+            status,
+            callbackAfterSeconds: this.options.callbackAfterSeconds,
+            logs: [
+                {log: msg, createdTime: Date.now()},
+            ]
+        });
+    }
+
     private __setKeepTaskTimerForNotifyConductor() {
         // clean old timer
         this.__clearKeepTaskTimerForNotifyConductor();
@@ -177,7 +187,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
                     debug('worker resolve');
 
                     runningTask.task.stopTask();
-                    debug(`Update runningTask:`, runningTask);
+                    debug(`Resolve runningTask:`, runningTask);
                     return {
                         ...baseTaskInfo,
                         callbackAfterSeconds: 0,
@@ -189,7 +199,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
                     debug('worker reject', err);
 
                     runningTask.task.stopTask();
-                    debug(`Update runningTask:`, runningTask);
+                    debug(`Reject runningTask:`, runningTask);
                     return {
                         ...baseTaskInfo,
                         callbackAfterSeconds: 0,
