@@ -10,10 +10,9 @@ import {PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult} from "./";
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
 
-interface ProcessingTask {
+interface ProcessingTask<Result = void> {
     taskId: string;
-    done: boolean;
-    start: number;
+    task: RunningTask<Result>;
 }
 
 export interface ConductorWorkerOptions {
@@ -29,10 +28,13 @@ export type WorkFunction<Result = void> = (input: any, runningTask: RunningTask<
 class RunningTask<Result = void> {
     options: RunningTaskCoreInfo;
     worker: ConductorWorker<Result>;
+    done: boolean;
+    start: number | undefined;
 
     constructor(worker: ConductorWorker<Result>, options: RunningTaskCoreInfo) {
         this.worker = worker;
         this.options = options;
+        this.done = false;
     }
 
     updateTaskInfo(partialUpdateTaskInfo: Partial<UpdatingTaskResult> & {callbackAfterSeconds: number, status: TaskState}) {
@@ -40,6 +42,15 @@ class RunningTask<Result = void> {
 
         const {client, apiPath} = this.worker;
         return client.post(`${apiPath}/tasks/`, updateTaskInfo);
+    }
+
+    startTask() {
+        this.start = Date.now();
+        this.done = false;
+    }
+
+    stopTask() {
+        this.done = true;
     }
 }
 
@@ -50,7 +61,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
     client: AxiosInstance;
     polling: boolean = false;
     maxConcurrent: number = Number.POSITIVE_INFINITY;
-    runningTasks: ProcessingTask[] = [];
+    runningTasks: ProcessingTask<Result>[] = [];
     heartbeatInterval: number = 300000; //default: 5 min
 
     constructor(options: ConductorWorkerOptions = {}) {
@@ -106,10 +117,8 @@ class ConductorWorker<Result = void> extends EventEmitter {
                 taskId,
             };
 
-            const runningTask = {
+            const runningTask: ProcessingTask<Result> = {
                 taskId,
-                done: false,
-                start: Date.now(),
                 task: new RunningTask<Result>(this, baseTaskInfo),
             };
             this.runningTasks.push(runningTask);
@@ -118,11 +127,12 @@ class ConductorWorker<Result = void> extends EventEmitter {
             // Working
             debug('Dealing with the task:', {workflowInstanceId, taskId});
             // const runningTask = this.__forceFindOneProcessingTask(taskId);
+            runningTask.task.startTask();
             return fn(input, runningTask.task)
                 .then(output => {
                     debug('worker resolve');
 
-                    runningTask.done = true;
+                    runningTask.task.stopTask();
                     debug(`Update runningTask:`, runningTask);
                     return {
                         ...baseTaskInfo,
@@ -134,7 +144,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
                 .catch((err) => {
                     debug('worker reject', err);
 
-                    runningTask.done = true;
+                    runningTask.task.stopTask();
                     debug(`Update runningTask:`, runningTask);
                     return {
                         ...baseTaskInfo,
