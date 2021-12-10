@@ -9,18 +9,24 @@ async function registerMetaData() {
     const taskMetadataManager = new TaskMetadataManager({apiEndpoint: config.apiEndpoint});
     const workflowMetadataManager = new WorkflowMetadataManager({apiEndpoint: config.apiEndpoint});
 
-    await taskMetadataManager.registerTask({
+    const taskMeta = {
+        ownerEmail: 'yujiechen0514@gmail.com',
         name: taskType,
         // timeoutSeconds: 2,
         // responseTimeoutSeconds: 1,
-    });
+        // inputKeys: [],
+        // outputKeys: [],
+        // retryCount: 0,
+    };
+    await taskMetadataManager.registerTasks([taskMeta]);
     await workflowMetadataManager.registerOrUpdateWorkflow({
+        ownerEmail: 'yujiechen0514@gmail.com',
         name: wfName,
         tasks: [
             {
-                "name": taskType,
-                "taskReferenceName": taskType,
-                "type": WorkflowTaskType.simple,
+                type: WorkflowTaskType.simple,
+                name: taskType,
+                taskReferenceName: taskType,
             }
         ],
     });

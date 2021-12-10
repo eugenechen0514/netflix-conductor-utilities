@@ -4,4 +4,5 @@ const {registerMetaData} = require('./utils');
     await registerMetaData();
     console.log('register meta done');
 })()
-    .then(console.log);
+    .then(console.log)
+    .catch(console.error)
