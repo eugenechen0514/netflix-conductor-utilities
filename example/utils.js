@@ -12,8 +12,8 @@ async function registerMetaData() {
     const taskMeta = {
         ownerEmail: 'yujiechen0514@gmail.com',
         name: taskType,
-        // timeoutSeconds: 2,
-        // responseTimeoutSeconds: 1,
+        timeoutSeconds: 90,
+        responseTimeoutSeconds: 10,
         // inputKeys: [],
         // outputKeys: [],
         // retryCount: 0,
