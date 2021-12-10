@@ -24,7 +24,7 @@ export interface ConductorWorkerOptions {
   heartbeatInterval?: number;
 }
 
-export type WorkFunction<Result = void> = (input: any) => Promise<Result>;
+export type WorkFunction<Result = void> = (input: any, thisWorker: ConductorWorker<Result>) => Promise<Result>;
 
 class ConductorWorker<Result = void> extends EventEmitter {
   url: string;
@@ -100,7 +100,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
       // Working
       debug('Dealing with the task:', {workflowInstanceId, taskId});
       // const runningTask = this.__forceFindOneProcessingTask(taskId);
-      return fn(input)
+      return fn(input, this)
           .then(output => {
             debug('worker resolve');
 
