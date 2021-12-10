@@ -441,13 +441,22 @@ export enum TaskState {
     skipped = 'SKIPPED',
 }
 
-export interface UpdatingTaskResult {
+export interface RunningTaskCoreInfo {
     workflowInstanceId: string;
     taskId: string;
+}
+
+export interface UpdatingTaskResult<Result = any> extends RunningTaskCoreInfo {
+    status: TaskState;
+    callbackAfterSeconds: number;
     reasonForIncompletion?: string;
-    callbackAfterSeconds?: number,
-    status?: TaskState.inProgress | TaskState.completed | TaskState.failed,
-    outputData?: any;
+    outputData?: Result;
+    logs?: {
+        log: string;
+
+        // millisecond time
+        createdTime: number;
+    }[];
 }
 
 export interface  ConductorSDKOptions {

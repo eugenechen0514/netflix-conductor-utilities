@@ -5,7 +5,7 @@ import {forever, END} from 'run-forever';
 import delay from 'delay';
 
 import axios, {AxiosInstance} from 'axios';
-import {PollTask, TaskState, UpdatingTaskResult} from "./";
+import {PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult} from "./";
 
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
@@ -24,7 +24,24 @@ export interface ConductorWorkerOptions {
   heartbeatInterval?: number;
 }
 
-export type WorkFunction<Result = void> = (input: any, thisWorker: ConductorWorker<Result>) => Promise<Result>;
+export type WorkFunction<Result = void> = (input: any, runningTask: RunningTask<Result>) => Promise<Result>;
+
+class RunningTask<Result = void> {
+  options: RunningTaskCoreInfo;
+  worker: ConductorWorker<Result>;
+
+  constructor(worker: ConductorWorker<Result>, options: RunningTaskCoreInfo) {
+    this.worker = worker;
+    this.options = options;
+  }
+
+  updateTaskInfo(partialUpdateTaskInfo: Partial<UpdatingTaskResult> & {callbackAfterSeconds: number, status: TaskState}) {
+    const updateTaskInfo = {...this.options, ...partialUpdateTaskInfo};
+
+    const {client, apiPath} = this.worker;
+    return client.post(`${apiPath}/tasks/`, updateTaskInfo);
+  }
+}
 
 class ConductorWorker<Result = void> extends EventEmitter {
   url: string;
@@ -92,15 +109,17 @@ class ConductorWorker<Result = void> extends EventEmitter {
       this.runningTasks.push(runningTask);
       debug(`Create runningTask: `, runningTask);
 
-      const baseTaskInfo: UpdatingTaskResult = {
+      const baseTaskInfo: RunningTaskCoreInfo = {
         workflowInstanceId,
         taskId,
       };
 
+      const runningTaskInstance = new RunningTask<Result>(this, baseTaskInfo);
+
       // Working
       debug('Dealing with the task:', {workflowInstanceId, taskId});
       // const runningTask = this.__forceFindOneProcessingTask(taskId);
-      return fn(input, this)
+      return fn(input, runningTaskInstance)
           .then(output => {
             debug('worker resolve');
 
@@ -132,7 +151,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
             // Return response, add logs
             debug('update task info: taskId:' + taskId);
-            return this.client.post(`${this.apiPath}/tasks/`, updateTaskInfo)
+            return runningTaskInstance.updateTaskInfo(updateTaskInfo)
                 .then(result => {
                   // debug(result.data);
                 })
@@ -140,7 +159,6 @@ class ConductorWorker<Result = void> extends EventEmitter {
                   debugError(err); // resolve
                 });
           })
-
     })();
   }
 
@@ -171,4 +189,4 @@ class ConductorWorker<Result = void> extends EventEmitter {
 }
 
 export default ConductorWorker;
-export {ConductorWorker};
+export {ConductorWorker, RunningTask};
