@@ -5,18 +5,22 @@ import debugFun from "debug";
 const debug = debugFun('RunningTask[DEBUG]');
 const debugError = debugFun('RunningTask[Error]');
 
-interface KeepTaskTimerOptions {
-    // ms
-    // need to " < responseTimeoutSeconds"
-    // Ref: https://netflix.github.io/conductor/configuration/taskdef/#task-definition
-    // default: 10000
-    interval: number;
+export interface KeepTaskTimerOptions {
+    keepAliveTimer: {
+        enable: boolean;
 
-    // second
-    // need to " < responseTimeoutSeconds"
-    // Ref: https://netflix.github.io/conductor/configuration/taskdef/#task-definition
-    // default: 60
-    callbackAfterSeconds: number;
+        // ms
+        // need to " < responseTimeoutSeconds"
+        // Ref: https://netflix.github.io/conductor/configuration/taskdef/#task-definition
+        // default: 10000
+        interval: number;
+
+        // second
+        // need to " < responseTimeoutSeconds"
+        // Ref: https://netflix.github.io/conductor/configuration/taskdef/#task-definition
+        // default: 60
+        callbackAfterSeconds: number;
+    }
 }
 
 export type RunningTaskOptions = RunningTaskCoreInfo & KeepTaskTimerOptions;
@@ -31,8 +35,9 @@ export default class RunningTask<Result = void> {
     constructor(worker: ConductorWorker<Result>, options: RunningTaskCoreInfo & Partial<KeepTaskTimerOptions>) {
         this.worker = worker;
 
-        const {interval = 10000, callbackAfterSeconds = 60} = options;
-        this.options = {...options, interval, callbackAfterSeconds};
+        // keepAliveTimer options
+        const {enable = true, interval = 10000, callbackAfterSeconds = 60} = options?.keepAliveTimer || {};
+        this.options = {...options, keepAliveTimer: {enable, interval, callbackAfterSeconds}};
         this.done = false;
     }
 
@@ -49,9 +54,9 @@ export default class RunningTask<Result = void> {
 
         // new a timer
         // notify conductor: task is still running, and not put the queue back
-        debug(`start a keeping-task timer: ${this.options.interval}`);
+        debug(`start a keeping-task timer: ${this.options.keepAliveTimer.interval}`);
         this.keepRunningTimer = setInterval(() => {
-            const callbackAfterSeconds = this.options.callbackAfterSeconds;
+            const callbackAfterSeconds = this.options.keepAliveTimer.callbackAfterSeconds;
             debug(`notify keep-task: callbackAfterSeconds: ${callbackAfterSeconds}`);
             this.updateTaskInfo({
                 status: TaskState.inProgress,
@@ -60,7 +65,7 @@ export default class RunningTask<Result = void> {
                 .catch(error => {
                     debugError(error);
                 })
-        }, this.options.interval);
+        }, this.options.keepAliveTimer.interval);
     }
 
     private __clearKeepTaskTimerForNotifyConductor() {
@@ -76,22 +81,28 @@ export default class RunningTask<Result = void> {
         this.start = Date.now();
         this.done = false;
 
-        this.__setKeepTaskTimerForNotifyConductor();
+        this.options.keepAliveTimer.enable && this.__setKeepTaskTimerForNotifyConductor();
     }
 
-    async sendLog(msg: string, status: TaskState = TaskState.inProgress) {
+    async sendLog(msg: string, others: Partial<UpdatingTaskResult> = {}) {
+        const otherInfo: Partial<UpdatingTaskResult> & {status: TaskState} = {
+            status: TaskState.inProgress,
+            ...others,
+        };
+        if(this.options.keepAliveTimer.enable) {
+            otherInfo.callbackAfterSeconds = this.options.keepAliveTimer.callbackAfterSeconds;
+        }
         return this.updateTaskInfo({
-            status,
-            callbackAfterSeconds: this.options.callbackAfterSeconds,
             logs: [
                 {log: msg, createdTime: Date.now()},
-            ]
+            ],
+            ...otherInfo,
         });
     }
 
     stopTask() {
         debug('stop a task');
-        this.__clearKeepTaskTimerForNotifyConductor();
+        this.options.keepAliveTimer.enable && this.__clearKeepTaskTimerForNotifyConductor();
         this.done = true;
     }
 }
