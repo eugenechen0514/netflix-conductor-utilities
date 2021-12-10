@@ -20,7 +20,7 @@ class RunningTask {
     constructor(worker, options) {
         this.worker = worker;
         // keepAliveTimer options
-        const { enable = true, interval = 10000, callbackAfterSeconds = 60 } = (options === null || options === void 0 ? void 0 : options.keepAliveTimer) || {};
+        const { enable = false, interval = 10000, callbackAfterSeconds = 60 } = (options === null || options === void 0 ? void 0 : options.keepAliveTimer) || {};
         this.options = Object.assign(Object.assign({}, options), { keepAliveTimer: { enable, interval, callbackAfterSeconds } });
         this.done = false;
     }
