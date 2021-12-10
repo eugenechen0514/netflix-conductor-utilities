@@ -16,6 +16,11 @@ const worker = new ConductorWorker({
     workerid: 'node-worker',
     maxConcurrent: 2,
     heartbeatInterval: 1000,
+    // runningTaskOptions: {
+    //     keepAliveTimer: {
+    //         enable: true,
+    //     }
+    // }
 });
 const taskType = config.taskType;
 

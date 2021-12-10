@@ -5,7 +5,7 @@ import delay from 'delay';
 
 import axios, {AxiosInstance} from 'axios';
 import {PollTask, RunningTaskCoreInfo, TaskState} from "./";
-import RunningTask from './RunningTask';
+import RunningTask, {KeepTaskTimerOptions} from './RunningTask';
 
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
@@ -21,6 +21,7 @@ export interface ConductorWorkerOptions {
     workerid?: string;
     maxConcurrent?: number;
     heartbeatInterval?: number;
+    runningTaskOptions?: Partial<KeepTaskTimerOptions>;
 }
 
 export type WorkFunction<Result = void> = (input: any, runningTask: RunningTask<Result>) => Promise<Result>;
@@ -35,12 +36,15 @@ class ConductorWorker<Result = void> extends EventEmitter {
     runningTasks: ProcessingTask<Result>[] = [];
     heartbeatInterval: number = 300000; //default: 5 min
 
+    runningTaskOptions: Partial<KeepTaskTimerOptions>;
+
     constructor(options: ConductorWorkerOptions = {}) {
         super();
-        const {url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval} = options;
+        const {url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {}} = options;
         this.url = url;
         this.apiPath = apiPath;
         this.workerid = workerid;
+        this.runningTaskOptions = runningTaskOptions;
 
         if(maxConcurrent) {
             this.maxConcurrent = maxConcurrent;
@@ -90,7 +94,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
             const runningTask: ProcessingTask<Result> = {
                 taskId,
-                task: new RunningTask<Result>(this, baseTaskInfo),
+                task: new RunningTask<Result>(this, {...baseTaskInfo, ...this.runningTaskOptions}),
             };
             this.runningTasks.push(runningTask);
             debug(`Create runningTask: `, runningTask);
