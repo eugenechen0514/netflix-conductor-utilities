@@ -68,20 +68,23 @@ const workflow = await workflowManager.startWorkflow({
 });
 ```
 
-### ConductorWorker Usage
+### ConductorWorker
+ConductorWorker Usage
 
 ``` typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
 // 'a_task_id' worker
-const worker = new ConductorWorker<string>({
+const worker = new ConductorWorker<{message: string}>({
     url: 'http://localhost:8080',
     workerid: 'my_worker_host',
 });
 
 // start
-worker.start('a_task_id', (input: {message: string}) => {
-    return Promise.resolve({message});
+worker.start('a_task_id', async (input: {data: string}, task) => {
+    // send log
+    await task.sendLog('hi');
+    return {message: input.data};
 }, 5000);
 
 // stop
