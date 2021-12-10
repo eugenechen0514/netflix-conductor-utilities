@@ -96,30 +96,29 @@ class ConductorWorker<Result = void> extends EventEmitter {
             const input = pullTask.inputData;
             const { workflowInstanceId, taskId } = pullTask;
 
-            // Ack the Task
+            // Ack the task
             debug(`Ack the "${taskType}" task`);
             await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
 
             // Record running task
-            const runningTask = {
-                taskId,
-                done: false,
-                start: Date.now(),
-            };
-            this.runningTasks.push(runningTask);
-            debug(`Create runningTask: `, runningTask);
-
             const baseTaskInfo: RunningTaskCoreInfo = {
                 workflowInstanceId,
                 taskId,
             };
 
-            const runningTaskInstance = new RunningTask<Result>(this, baseTaskInfo);
+            const runningTask = {
+                taskId,
+                done: false,
+                start: Date.now(),
+                task: new RunningTask<Result>(this, baseTaskInfo),
+            };
+            this.runningTasks.push(runningTask);
+            debug(`Create runningTask: `, runningTask);
 
             // Working
             debug('Dealing with the task:', {workflowInstanceId, taskId});
             // const runningTask = this.__forceFindOneProcessingTask(taskId);
-            return fn(input, runningTaskInstance)
+            return fn(input, runningTask.task)
                 .then(output => {
                     debug('worker resolve');
 
@@ -151,7 +150,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
 
                     // Return response, add logs
                     debug('update task info: taskId:' + taskId);
-                    return runningTaskInstance.updateTaskInfo(updateTaskInfo)
+                    return runningTask.task.updateTaskInfo(updateTaskInfo)
                         .then(result => {
                             // debug(result.data);
                         })
