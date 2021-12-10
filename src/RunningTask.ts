@@ -36,7 +36,7 @@ export default class RunningTask<Result = void> {
         this.worker = worker;
 
         // keepAliveTimer options
-        const {enable = true, interval = 10000, callbackAfterSeconds = 60} = options?.keepAliveTimer || {};
+        const {enable = false, interval = 10000, callbackAfterSeconds = 60} = options?.keepAliveTimer || {};
         this.options = {...options, keepAliveTimer: {enable, interval, callbackAfterSeconds}};
         this.done = false;
     }
