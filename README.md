@@ -1,13 +1,20 @@
 in progress...
 
+# IMPORTANT
+
+Because the “POST /tasks/{taskId}/ack“ api removed in ConductorV3, workers have been no longer to acknowledge a Conductor Server. To be compatible with ConductorV2 in following packages(^0.7.0), `needAckTask` option in **ConductorWorker** can control whether a worker acknowledges a Conductor Server.
+
 # netflix-conductor-utilities
 
 A simple lib for worker of Netflix conductor
 
 # Install
+
 ``` bash
 npm install netflix-conductor-utilities
 ```
+
+Note: The previous versions before 0.6.1 only work for ConductorV2.
 
 # Usage
 
@@ -49,6 +56,7 @@ const workflow = await workflowMetaManager.registerWorkflow({
             "name": "a_task_id",
             "taskReferenceName": "a_task_id_in_wf",
             "type": WorkflowTaskType.simple,
+            "ownerEmail": "yujiechen0514@gmail.com"
         }
     ],
 });
@@ -78,6 +86,9 @@ import {ConductorWorker} from 'netflix-conductor-utilities';
 const worker = new ConductorWorker<{message: string}>({
     url: 'http://localhost:8080',
     workerid: 'my_worker_host',
+    
+    // shoule be 'true' for a ConductorV2
+    needAckTask: false
 });
 
 // start
