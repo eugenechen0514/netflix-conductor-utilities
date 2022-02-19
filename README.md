@@ -2,7 +2,7 @@ in progress...
 
 # IMPORTANT
 
-Because the “POST /tasks/{taskId}/ack“ api removed in ConductorV3, workers have been no longer to acknowledge a Conductor Server. To be compatible with ConductorV2 in following packages(^0.7.0), `needAckTask` option(default `false`) in **ConductorWorker** to control whether a worker acknowledges a Conductor Server.
+Because the “POST /tasks/{taskId}/ack“ api removed in ConductorV3, workers have been no longer to acknowledge a Conductor Server. To be compatible with ConductorV2 in following packages(^0.7.0), `needAckTask` option(default `false`) in **ConductorWorker** can control whether a worker acknowledges a Conductor Server.
 
 # netflix-conductor-utilities
 
