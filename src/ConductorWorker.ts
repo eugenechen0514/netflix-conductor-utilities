@@ -22,6 +22,12 @@ export interface ConductorWorkerOptions {
     maxConcurrent?: number;
     heartbeatInterval?: number;
     runningTaskOptions?: Partial<KeepTaskTimerOptions>;
+
+    /**
+     * Because the “POST /tasks/{taskId}/ack“ api was removed in ConductorV3,
+     * workers have been no longer to acknowledge a Conductor Server.
+     */
+    needAckTask?: boolean;
 }
 
 export type WorkFunction<Result = void> = (input: any, runningTask: RunningTask<Result>) => Promise<Result>;
@@ -35,24 +41,29 @@ class ConductorWorker<Result = void> extends EventEmitter {
     maxConcurrent: number = Number.POSITIVE_INFINITY;
     runningTasks: ProcessingTask<Result>[] = [];
     heartbeatInterval: number = 300000; //default: 5 min
+    needAckTask: boolean = false;
 
     runningTaskOptions: Partial<KeepTaskTimerOptions>;
 
     constructor(options: ConductorWorkerOptions = {}) {
         super();
-        const {url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {}} = options;
+        const {
+            url = 'http://localhost:8080',
+            apiPath = '/api',
+            workerid = undefined,
+            maxConcurrent,
+            heartbeatInterval,
+            runningTaskOptions = {},
+            needAckTask,
+        } = options;
         this.url = url;
         this.apiPath = apiPath;
         this.workerid = workerid;
         this.runningTaskOptions = runningTaskOptions;
 
-        if(maxConcurrent) {
-            this.maxConcurrent = maxConcurrent;
-        }
-
-        if(heartbeatInterval) {
-            this.heartbeatInterval = heartbeatInterval;
-        }
+        maxConcurrent && (this.maxConcurrent = maxConcurrent);
+        heartbeatInterval && (this.heartbeatInterval = heartbeatInterval);
+        needAckTask && (this.needAckTask = needAckTask);
 
         this.client = axios.create({
             baseURL: this.url,
@@ -83,8 +94,10 @@ class ConductorWorker<Result = void> extends EventEmitter {
             const { workflowInstanceId, taskId } = pullTask;
 
             // Ack the task
-            debug(`Ack the "${taskType}" task`);
-            await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
+            if(this.needAckTask) {
+                debug(`Ack the "${taskType}" task`);
+                await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
+            }
 
             // Record running task
             const baseTaskInfo: RunningTaskCoreInfo = {
