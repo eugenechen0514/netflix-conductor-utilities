@@ -30,17 +30,15 @@ class ConductorWorker extends events_1.EventEmitter {
         this.maxConcurrent = Number.POSITIVE_INFINITY;
         this.runningTasks = [];
         this.heartbeatInterval = 300000; //default: 5 min
-        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {} } = options;
+        this.needAckTask = false;
+        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {}, needAckTask, } = options;
         this.url = url;
         this.apiPath = apiPath;
         this.workerid = workerid;
         this.runningTaskOptions = runningTaskOptions;
-        if (maxConcurrent) {
-            this.maxConcurrent = maxConcurrent;
-        }
-        if (heartbeatInterval) {
-            this.heartbeatInterval = heartbeatInterval;
-        }
+        maxConcurrent && (this.maxConcurrent = maxConcurrent);
+        heartbeatInterval && (this.heartbeatInterval = heartbeatInterval);
+        needAckTask && (this.needAckTask = needAckTask);
         this.client = axios_1.default.create({
             baseURL: this.url,
             responseType: 'json',
@@ -67,8 +65,10 @@ class ConductorWorker extends events_1.EventEmitter {
             const input = pullTask.inputData;
             const { workflowInstanceId, taskId } = pullTask;
             // Ack the task
-            debug(`Ack the "${taskType}" task`);
-            yield this.client.post(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
+            if (this.needAckTask) {
+                debug(`Ack the "${taskType}" task`);
+                yield this.client.post(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
+            }
             // Record running task
             const baseTaskInfo = {
                 workflowInstanceId,
