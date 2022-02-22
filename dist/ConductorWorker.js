@@ -29,15 +29,13 @@ class ConductorWorker extends events_1.EventEmitter {
         this.polling = false;
         this.maxConcurrent = Number.POSITIVE_INFINITY;
         this.runningTasks = [];
-        this.heartbeatInterval = 300000; //default: 5 min
         this.needAckTask = false;
-        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, heartbeatInterval, runningTaskOptions = {}, needAckTask, } = options;
+        const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, runningTaskOptions = {}, needAckTask, } = options;
         this.url = url;
         this.apiPath = apiPath;
         this.workerid = workerid;
         this.runningTaskOptions = runningTaskOptions;
         maxConcurrent && (this.maxConcurrent = maxConcurrent);
-        heartbeatInterval && (this.heartbeatInterval = heartbeatInterval);
         needAckTask && (this.needAckTask = needAckTask);
         this.client = axios_1.default.create({
             baseURL: this.url,
