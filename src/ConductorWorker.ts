@@ -30,16 +30,16 @@ export interface ConductorWorkerOptions {
     needAckTask?: boolean;
 }
 
-export type WorkFunction<Result = void> = (input: any, runningTask: RunningTask<Result>) => Promise<Result>;
+export type WorkFunction<OUTPUT = void, INPUT = any> = (input: INPUT, runningTask: RunningTask<OUTPUT>) => Promise<OUTPUT>;
 
-class ConductorWorker<Result = void> extends EventEmitter {
+class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
     url: string;
     apiPath: string;
     workerid?: string;
     client: AxiosInstance;
     polling: boolean = false;
     maxConcurrent: number = Number.POSITIVE_INFINITY;
-    runningTasks: ProcessingTask<Result>[] = [];
+    runningTasks: ProcessingTask<OUTPUT>[] = [];
     heartbeatInterval: number = 300000; //default: 5 min
     needAckTask: boolean = false;
 
@@ -80,7 +80,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
         return true
     }
 
-    pollAndWork(taskType: string, fn: WorkFunction<Result>) { // keep 'function'
+    pollAndWork(taskType: string, fn: WorkFunction<OUTPUT, INPUT>) { // keep 'function'
         return (async () => {
             // Poll for Worker task
             debug(`Poll a "${taskType}" task`);
@@ -105,9 +105,9 @@ class ConductorWorker<Result = void> extends EventEmitter {
                 taskId,
             };
 
-            const runningTask: ProcessingTask<Result> = {
+            const runningTask: ProcessingTask<OUTPUT> = {
                 taskId,
-                task: new RunningTask<Result>(this, {...baseTaskInfo, ...this.runningTaskOptions}),
+                task: new RunningTask<OUTPUT>(this, {...baseTaskInfo, ...this.runningTaskOptions}),
             };
             this.runningTasks.push(runningTask);
             debug(`Create runningTask: `, runningTask);
@@ -159,7 +159,7 @@ class ConductorWorker<Result = void> extends EventEmitter {
         })();
     }
 
-    start(taskType: string, fn: WorkFunction<Result>, interval: number = 1000) {
+    start(taskType: string, fn: WorkFunction<OUTPUT>, interval: number = 1000) {
         this.polling = true;
         debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
         forever(async () => {
