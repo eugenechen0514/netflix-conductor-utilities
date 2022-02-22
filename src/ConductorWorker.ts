@@ -155,7 +155,7 @@ class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
         })();
     }
 
-    start(taskType: string, fn: WorkFunction<OUTPUT>, interval: number = 1000) {
+    start(taskType: string, fn: WorkFunction<OUTPUT, INPUT>, interval: number = 1000) {
         this.polling = true;
         debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
         forever(async () => {
