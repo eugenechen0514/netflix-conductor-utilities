@@ -3,7 +3,7 @@ const {ConductorWorker} = require('../build');
 const fakeTaskProcessingTime = 60000;
 
 function delay(ms = 10000) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         setTimeout(()=>{
             resolve();
         }, ms);
@@ -15,7 +15,6 @@ const worker = new ConductorWorker({
     // apiPath: config.apiPath, // base path
     workerid: 'node-worker',
     maxConcurrent: 2,
-    heartbeatInterval: 1000,
     // runningTaskOptions: {
     //     keepAliveTimer: {
     //         enable: true,

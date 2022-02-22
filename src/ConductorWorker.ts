@@ -20,7 +20,6 @@ export interface ConductorWorkerOptions {
     apiPath?: string;
     workerid?: string;
     maxConcurrent?: number;
-    heartbeatInterval?: number;
     runningTaskOptions?: Partial<KeepTaskTimerOptions>;
 
     /**
@@ -40,7 +39,6 @@ class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
     polling: boolean = false;
     maxConcurrent: number = Number.POSITIVE_INFINITY;
     runningTasks: ProcessingTask<OUTPUT>[] = [];
-    heartbeatInterval: number = 300000; //default: 5 min
     needAckTask: boolean = false;
 
     runningTaskOptions: Partial<KeepTaskTimerOptions>;
@@ -52,7 +50,6 @@ class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
             apiPath = '/api',
             workerid = undefined,
             maxConcurrent,
-            heartbeatInterval,
             runningTaskOptions = {},
             needAckTask,
         } = options;
@@ -62,7 +59,6 @@ class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
         this.runningTaskOptions = runningTaskOptions;
 
         maxConcurrent && (this.maxConcurrent = maxConcurrent);
-        heartbeatInterval && (this.heartbeatInterval = heartbeatInterval);
         needAckTask && (this.needAckTask = needAckTask);
 
         this.client = axios.create({
