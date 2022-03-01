@@ -86,6 +86,9 @@ import {ConductorWorker} from 'netflix-conductor-utilities';
 const worker = new ConductorWorker<{message: string}>({
     url: 'http://localhost:8080',
     workerid: 'my_worker_host',
+   
+   // maximum number of parallel running tasks
+    maxConcurrent: 2,
     
     // shoule be 'true' for a ConductorV2
     needAckTask: false
