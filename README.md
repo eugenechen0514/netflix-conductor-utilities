@@ -83,7 +83,7 @@ ConductorWorker Usage
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
 // 'a_task_id' worker
-const worker = new ConductorWorker<{message: string}>({
+const worker = new ConductorWorker<{message: string}, {data: string}>({
     url: 'http://localhost:8080',
     workerid: 'my_worker_host',
    
