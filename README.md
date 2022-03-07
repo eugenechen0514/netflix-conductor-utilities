@@ -1,5 +1,8 @@
 in progress...
 
+[![NPM](https://nodei.co/npm/netflix-conductor-utilities.png)](https://nodei.co/npm/netflix-conductor-utilities/)
+<!--[![NPM](https://nodei.co/npm-dl/netflix-conductor-utilities.png?height=3)](https://nodei.co/npm/netflix-conductor-utilities/)-->
+
 # IMPORTANT
 
 Because the “POST /tasks/{taskId}/ack“ api removed in ConductorV3, workers have been no longer to acknowledge a Conductor Server. To be compatible with ConductorV2 in following packages(^0.7.0), `needAckTask` option(default `false`) in **ConductorWorker** can control whether a worker acknowledges a Conductor Server.
