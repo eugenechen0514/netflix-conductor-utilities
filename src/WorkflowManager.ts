@@ -40,9 +40,9 @@ class WorkflowManager {
     /**
      * Get Workflow State by workflow Id. If includeTasks is set, then also includes all the tasks executed and scheduled.
      */
-    async retrieveWorkflow(workflowId: string, includeTasks = false) {
+    async retrieveWorkflow<INPUT= any, OUTPUT = any>(workflowId: string, includeTasks = false) {
         const params = {includeTasks};
-        const {data} = await this.client.get<Workflow>('/workflow/' + workflowId, {params});
+        const {data} = await this.client.get<Workflow<INPUT, OUTPUT>>('/workflow/' + workflowId, {params});
         return data;
     }
 

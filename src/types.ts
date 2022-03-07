@@ -349,7 +349,7 @@ export enum WorkflowStatus {
     terminated = 'TERMINATED',
     paused = 'PAUSED',
 }
-export interface Workflow {
+export interface Workflow<INPUT= any, OUTPUT = any> {
     createTime: number,
     endTime: number,
     priority: number,
@@ -364,8 +364,8 @@ export interface Workflow {
     workflowType: string,
     workflowVersion: number,
     tasks: Task[],
-    input?: object,
-    output?: object,
+    input?: INPUT,
+    output?: OUTPUT,
 }
 
 export interface Task {
