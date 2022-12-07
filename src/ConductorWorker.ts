@@ -7,7 +7,7 @@ import { Bucketchain, Superchain } from 'superchain';
 import axios, { AxiosInstance } from 'axios';
 import { PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult } from './';
 import RunningTask, { KeepTaskTimerOptions } from './RunningTask';
-import assert from 'assert';
+import { getTaskCtx, initPreChainMiddleware } from './utils/chainUtils';
 
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
@@ -102,7 +102,7 @@ class ConductorWorker<
     needAckTask && (this.needAckTask = needAckTask);
 
     // chain
-    this.__preChain = this.bucketChain.bucket('pre');
+    this.__preChain = initPreChainMiddleware(this.bucketChain);
 
     this.client = axios.create({
       baseURL: this.url,
@@ -120,15 +120,17 @@ class ConductorWorker<
   }
 
   __registerMiddleware(chain: Superchain, middleware: ConductorWorkerMiddleware<CTX>) {
-    chain.add(async function (ctx: CTX, next: ConductorWorkerMiddlewareNext) {
-      const handleError = function (err?: Error) {
+    chain.add(async function (_ctx: any, next: ConductorWorkerMiddlewareNext) {
+      // @ts-ignore
+      const ctx = getTaskCtx(this);
+      const handleNext = function (err?: Error) {
         if (err) {
           throw err;
         } else {
           next();
         }
       };
-      return middleware(ctx, handleError);
+      return middleware(ctx, handleNext);
     });
   }
 
@@ -196,11 +198,13 @@ class ConductorWorker<
       };
       return this.bucketChain
         .run(initCtx)
-        .then((ctx: CTX) => {
-          const { input, runningTask } = ctx;
+        .then((chainCtx: any) => {
+          // get task ctx
+          const taskCtx = getTaskCtx(chainCtx);
+          const { input, runningTask } = taskCtx;
 
           // user process
-          return fn(input, runningTask, ctx).then((output) => {
+          return fn(input, runningTask, taskCtx).then((output) => {
             debug('worker resolve');
 
             runningTask.stopTask();
