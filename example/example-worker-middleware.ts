@@ -2,7 +2,7 @@ import os from 'os';
 import config from './config';
 import { ConductorWorker, ConductorWorkerChainContext, WorkFunction } from '../src';
 
-const fakeTaskProcessingTime = 5000;
+const fakeTaskProcessingTime = 1000;
 
 // helpers
 function delay(ms = 10000) {
@@ -33,14 +33,18 @@ const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
   // apiPath: config.apiPath, // base path
   workerid: 'node-worker-' + os.hostname(),
   maxConcurrent: 1,
+  runningTaskOptions: {
+    keepAliveTimer: {
+      enable: true,
+      interval: 2000,
+      callbackAfterSeconds: 10,
+    },
+  },
 });
 
 // add middleware
 worker.use(async function (ctx, next) {
   ctx.user = await getUser();
-
-  // next middleware
-  next();
 });
 
 // polling

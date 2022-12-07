@@ -8,6 +8,7 @@ import axios, { AxiosInstance } from 'axios';
 import { PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult } from './';
 import RunningTask, { KeepTaskTimerOptions } from './RunningTask';
 import { getTaskCtx, initPreChainMiddleware } from './utils/chainUtils';
+import isPromise from 'is-promise';
 
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
@@ -54,6 +55,10 @@ export type WorkFunction<OUTPUT = void, INPUT = any, CTX = ConductorWorkerChainC
 export type ConductorWorkerMiddlewareNext = (error?: Error) => void;
 export type ConductorWorkerMiddleware<CTX = ConductorWorkerChainContext> = (
   ctx: CTX,
+  /**
+   * invoke next() if use callback-version middleware
+   * ignore next param if use promise-version middleware
+   */
   next: ConductorWorkerMiddlewareNext,
 ) => void | Promise<void>;
 
@@ -123,6 +128,8 @@ class ConductorWorker<
     chain.add(async function (_ctx: any, next: ConductorWorkerMiddlewareNext) {
       // @ts-ignore
       const ctx = getTaskCtx(this);
+
+      // for callback version
       const handleNext = function (err?: Error) {
         if (err) {
           throw err;
@@ -130,7 +137,15 @@ class ConductorWorker<
           next();
         }
       };
-      return middleware(ctx, handleNext);
+
+      // for promise version
+      const result = middleware(ctx, handleNext);
+      if (isPromise(result)) {
+        result.then(() => {
+          next();
+        });
+      }
+      return result;
     });
   }
 
