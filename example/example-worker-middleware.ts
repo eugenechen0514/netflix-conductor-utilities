@@ -1,7 +1,8 @@
+import os from 'os';
 import config from './config';
 import { ConductorWorker, ConductorWorkerChainContext, WorkFunction } from '../src';
 
-const fakeTaskProcessingTime = 60000;
+const fakeTaskProcessingTime = 5000;
 
 // helpers
 function delay(ms = 10000) {
@@ -30,13 +31,16 @@ interface MyWorkContext extends ConductorWorkerChainContext<MyTaskInput, MyTaskO
 const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
   url: config.url, // host
   // apiPath: config.apiPath, // base path
-  workerid: 'node-worker',
+  workerid: 'node-worker-' + os.hostname(),
   maxConcurrent: 1,
 });
 
 // add middleware
-worker.use(async (ctx) => {
+worker.use(async function (ctx, next) {
   ctx.user = await getUser();
+
+  // next middleware
+  next();
 });
 
 // polling
