@@ -1,185 +1,278 @@
 import debugFun from 'debug';
-import {EventEmitter} from 'events';
-import {END, forever} from 'run-forever';
+import { EventEmitter } from 'events';
+import { END, forever } from 'run-forever';
 import delay from 'delay';
+import { Bucketchain, Superchain } from 'superchain';
 
-import axios, {AxiosInstance} from 'axios';
-import {PollTask, RunningTaskCoreInfo, TaskState} from "./";
-import RunningTask, {KeepTaskTimerOptions} from './RunningTask';
+import axios, { AxiosInstance } from 'axios';
+import { PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult } from './';
+import RunningTask, { KeepTaskTimerOptions } from './RunningTask';
+import assert from 'assert';
 
 const debug = debugFun('ConductorWorker[DEBUG]');
 const debugError = debugFun('ConductorWorker[Error]');
 
-interface ProcessingTask<Result = void> {
-    taskId: string;
-    task: RunningTask<Result>;
+interface ProcessingTask<
+  OUTPUT = void,
+  INPUT = any,
+  CTX extends ConductorWorkerChainContext<any> = ConductorWorkerChainContext<OUTPUT, INPUT>,
+> {
+  taskId: string;
+  task: RunningTask<OUTPUT, INPUT, CTX>;
 }
 
 export interface ConductorWorkerOptions {
-    url?: string;
-    apiPath?: string;
-    workerid?: string;
-    maxConcurrent?: number;
-    runningTaskOptions?: Partial<KeepTaskTimerOptions>;
+  url?: string;
+  apiPath?: string;
+  workerid?: string;
+  maxConcurrent?: number;
+  runningTaskOptions?: Partial<KeepTaskTimerOptions>;
 
-    /**
-     * Because the “POST /tasks/{taskId}/ack“ api was removed in ConductorV3,
-     * workers have been no longer to acknowledge a Conductor Server.
-     */
-    needAckTask?: boolean;
+  /**
+   * Because the “POST /tasks/{taskId}/ack“ api was removed in ConductorV3,
+   * workers have been no longer to acknowledge a Conductor Server.
+   */
+  needAckTask?: boolean;
 }
 
-export type WorkFunction<OUTPUT = void, INPUT = any> = (input: INPUT, runningTask: RunningTask<OUTPUT>) => Promise<OUTPUT>;
+export interface ConductorWorkerChainContext<OUTPUT = void, INPUT = any, CTX = any> {
+  /**
+   * input data from a polled task
+   */
+  input: INPUT;
+  pollTask: PollTask;
+  runningTask: RunningTask<OUTPUT, INPUT, this>;
+  worker: ConductorWorker<OUTPUT, INPUT, this>;
+}
 
-class ConductorWorker<OUTPUT = void, INPUT = any> extends EventEmitter {
-    url: string;
-    apiPath: string;
-    workerid?: string;
-    client: AxiosInstance;
-    polling: boolean = false;
-    maxConcurrent: number = Number.POSITIVE_INFINITY;
-    runningTasks: ProcessingTask<OUTPUT>[] = [];
-    needAckTask: boolean = false;
+export type WorkFunction<OUTPUT = void, INPUT = any, CTX = ConductorWorkerChainContext<OUTPUT, INPUT>> = (
+  input: INPUT,
+  runningTask: RunningTask<OUTPUT>,
+  ctx: CTX,
+) => Promise<OUTPUT>;
 
-    runningTaskOptions: Partial<KeepTaskTimerOptions>;
+export type ConductorWorkerMiddlewareNext = (error?: Error) => void;
+export type ConductorWorkerMiddleware<CTX = ConductorWorkerChainContext> = (
+  ctx: CTX,
+  next: ConductorWorkerMiddlewareNext,
+) => void | Promise<void>;
 
-    constructor(options: ConductorWorkerOptions = {}) {
-        super();
-        const {
-            url = 'http://localhost:8080',
-            apiPath = '/api',
-            workerid = undefined,
-            maxConcurrent,
-            runningTaskOptions = {},
-            needAckTask,
-        } = options;
-        this.url = url;
-        this.apiPath = apiPath;
-        this.workerid = workerid;
-        this.runningTaskOptions = runningTaskOptions;
+export type ConductorWorkerChainBucketName = 'input' | 'pre';
 
-        maxConcurrent && (this.maxConcurrent = maxConcurrent);
-        needAckTask && (this.needAckTask = needAckTask);
+class ConductorWorker<
+  OUTPUT = void,
+  INPUT = any,
+  CTX extends ConductorWorkerChainContext<any> = ConductorWorkerChainContext<OUTPUT, INPUT>,
+> extends EventEmitter {
+  url: string;
+  apiPath: string;
+  workerid?: string;
+  client: AxiosInstance;
+  polling: boolean = false;
+  maxConcurrent: number = Number.POSITIVE_INFINITY;
+  runningTasks: ProcessingTask<OUTPUT, INPUT, CTX>[] = [];
+  needAckTask: boolean = false;
 
-        this.client = axios.create({
-            baseURL: this.url,
-            responseType: 'json',
-        });
+  /**
+   * chain bucket:
+   *  pre
+   * support by https://www.npmjs.com/package/superchain
+   */
+  bucketChain = new Bucketchain();
+  __preChain: Superchain;
+
+  runningTaskOptions: Partial<KeepTaskTimerOptions>;
+
+  constructor(options: ConductorWorkerOptions = {}) {
+    super();
+    const {
+      url = 'http://localhost:8080',
+      apiPath = '/api',
+      workerid = undefined,
+      maxConcurrent,
+      runningTaskOptions = {},
+      needAckTask,
+    } = options;
+    this.url = url;
+    this.apiPath = apiPath;
+    this.workerid = workerid;
+    this.runningTaskOptions = runningTaskOptions;
+
+    maxConcurrent && (this.maxConcurrent = maxConcurrent);
+    needAckTask && (this.needAckTask = needAckTask);
+
+    // chain
+    this.__preChain = this.bucketChain.bucket('pre');
+
+    this.client = axios.create({
+      baseURL: this.url,
+      responseType: 'json',
+    });
+  }
+
+  __canPollTask() {
+    debug(`Check the amount of running tasks: ${this.runningTasks.length}`);
+    if (this.runningTasks.length >= this.maxConcurrent) {
+      debug(`Skip polling task because the work reaches the max amount of running tasks`);
+      return false;
     }
+    return true;
+  }
 
-    __canPollTask() {
-        debug(`Check the amount of running tasks: ${this.runningTasks.length}`);
-        if(this.runningTasks.length >= this.maxConcurrent) {
-            debug(`Skip polling task because the work reaches the max amount of running tasks`);
-            return false;
+  __registerMiddleware(chain: Superchain, middleware: ConductorWorkerMiddleware<CTX>) {
+    chain.add(async function (ctx: CTX, next: ConductorWorkerMiddlewareNext) {
+      const handleError = function (err?: Error) {
+        if (err) {
+          throw err;
+        } else {
+          next();
         }
-        return true
+      };
+      return middleware(ctx, handleError);
+    });
+  }
+
+  add(bucketName: ConductorWorkerChainBucketName, middleware: ConductorWorkerMiddleware<CTX>) {
+    if (bucketName === 'pre') {
+      return this.__registerMiddleware(this.__preChain, middleware);
     }
+    throw new Error(`unknown bucketName: ${bucketName}`);
+  }
 
-    pollAndWork(taskType: string, fn: WorkFunction<OUTPUT, INPUT>) { // keep 'function'
-        return (async () => {
-            // Poll for Worker task
-            debug(`Poll a "${taskType}" task`);
-            const {data: pullTask} = await this.client.get<PollTask | void>(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
-            if (!pullTask) {
-                debug(`No more "${taskType}" tasks`);
-                return;
-            }
-            debug(`Polled a "${taskType}" task: `, pullTask);
-            const input = pullTask.inputData;
-            const { workflowInstanceId, taskId } = pullTask;
+  /**
+   *
+   * middleware basic usage
+   */
+  use(middleware: ConductorWorkerMiddleware<CTX>) {
+    return this.add('pre', middleware);
+  }
 
-            // Ack the task
-            if(this.needAckTask) {
-                debug(`Ack the "${taskType}" task`);
-                await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
-            }
+  pollAndWork(taskType: string, fn: WorkFunction<OUTPUT, INPUT, CTX>) {
+    // keep 'function'
+    return (async () => {
+      // Poll for Worker task
+      debug(`Poll a "${taskType}" task`);
+      const { data: pollTask } = await this.client.get<PollTask | void>(
+        `${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`,
+      );
+      if (!pollTask) {
+        debug(`No more "${taskType}" tasks`);
+        return;
+      }
+      debug(`Polled a "${taskType}" task: `, pollTask);
+      const input = pollTask.inputData;
+      const { workflowInstanceId, taskId } = pollTask;
 
-            // Record running task
-            const baseTaskInfo: RunningTaskCoreInfo = {
-                workflowInstanceId,
-                taskId,
+      // Ack the task
+      if (this.needAckTask) {
+        debug(`Ack the "${taskType}" task`);
+        await this.client.post<boolean>(`${this.apiPath}/tasks/${taskId}/ack?workerid=${this.workerid}`);
+      }
+
+      // Record running task
+      const baseTaskInfo: RunningTaskCoreInfo = {
+        workflowInstanceId,
+        taskId,
+      };
+
+      const processingTask: ProcessingTask<OUTPUT, INPUT, CTX> = {
+        taskId,
+        task: new RunningTask<OUTPUT, INPUT, CTX>(this, { ...baseTaskInfo, ...this.runningTaskOptions }),
+      };
+      this.runningTasks.push(processingTask);
+      debug(`Create runningTask: `, processingTask);
+
+      // Working
+      debug('Dealing with the task:', { workflowInstanceId, taskId });
+      // const processingTask = this.__forceFindOneProcessingTask(taskId);
+      processingTask.task.startTask();
+
+      // Processing
+      const initCtx: ConductorWorkerChainContext<OUTPUT, INPUT, CTX> = {
+        input,
+        pollTask,
+        runningTask: processingTask.task,
+        worker: this,
+      };
+      return this.bucketChain
+        .run(initCtx)
+        .then((ctx: CTX) => {
+          const { input, runningTask } = ctx;
+
+          // user process
+          return fn(input, runningTask, ctx).then((output) => {
+            debug('worker resolve');
+
+            runningTask.stopTask();
+            debug(`Resolve runningTask:`, processingTask);
+            return {
+              ...baseTaskInfo,
+              callbackAfterSeconds: 0,
+              outputData: output,
+              status: TaskState.completed,
             };
-
-            const runningTask: ProcessingTask<OUTPUT> = {
-                taskId,
-                task: new RunningTask<OUTPUT>(this, {...baseTaskInfo, ...this.runningTaskOptions}),
-            };
-            this.runningTasks.push(runningTask);
-            debug(`Create runningTask: `, runningTask);
-
-            // Working
-            debug('Dealing with the task:', {workflowInstanceId, taskId});
-            // const runningTask = this.__forceFindOneProcessingTask(taskId);
-            runningTask.task.startTask();
-            return fn(input, runningTask.task)
-                .then(output => {
-                    debug('worker resolve');
-
-                    runningTask.task.stopTask();
-                    debug(`Resolve runningTask:`, runningTask);
-                    return {
-                        ...baseTaskInfo,
-                        callbackAfterSeconds: 0,
-                        outputData: output,
-                        status: TaskState.completed,
-                    };
-                })
-                .catch((err) => {
-                    debug('worker reject', err);
-
-                    runningTask.task.stopTask();
-                    debug(`Reject runningTask:`, runningTask);
-                    return {
-                        ...baseTaskInfo,
-                        callbackAfterSeconds: 0,
-                        reasonForIncompletion: String(err), // If failed, reason for failure
-                        status: TaskState.failed,
-                    };
-                })
-                .then(updateTaskInfo => {
-                    // release running task
-                    this.runningTasks = this.runningTasks.filter(task => task.taskId !== updateTaskInfo.taskId);
-                    debug(`Change the amount of running tasks: ${this.runningTasks.length}`);
-
-                    // Return response, add logs
-                    debug('update task info: taskId:' + taskId);
-                    return runningTask.task.updateTaskInfo(updateTaskInfo)
-                        .then(result => {
-                            // debug(result.data);
-                        })
-                        .catch(err => {
-                            debugError(err); // resolve
-                        });
-                })
-        })();
-    }
-
-    start(taskType: string, fn: WorkFunction<OUTPUT, INPUT>, interval: number = 1000) {
-        this.polling = true;
-        debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
-        forever(async () => {
-            if (this.polling) {
-                if(this.__canPollTask()) {
-                    this.pollAndWork(taskType, fn)
-                        .then((data: any) => {
-                            // debug(data);
-                        }, (err: any) => {
-                            debugError(err)
-                        });
-                }
-                await delay(interval);
-            } else {
-                debug(`Stop polling: taskType = ${taskType}`);
-                return END;
-            }
+          });
         })
-    }
+        .catch((err: any) => {
+          debug('worker reject', err);
 
-    stop() {
-        this.polling = false
-    }
+          processingTask.task.stopTask();
+          debug(`Reject runningTask:`, processingTask);
+          return {
+            ...baseTaskInfo,
+            callbackAfterSeconds: 0,
+            reasonForIncompletion: String(err), // If failed, reason for failure
+            status: TaskState.failed,
+          };
+        })
+        .then((updateTaskInfo: Partial<UpdatingTaskResult> & { status: TaskState }) => {
+          // release running task
+          this.runningTasks = this.runningTasks.filter((task) => task.taskId !== updateTaskInfo.taskId);
+          debug(`Change the amount of running tasks: ${this.runningTasks.length}`);
+
+          // Return response, add logs
+          debug('update task info: taskId:' + taskId);
+          return processingTask.task
+            .updateTaskInfo(updateTaskInfo)
+            .then((result) => {
+              // debug(result.data);
+            })
+            .catch((err) => {
+              debugError(err); // resolve
+            });
+        });
+    })();
+  }
+
+  start(taskType: string, fn: WorkFunction<OUTPUT, INPUT, CTX>, interval: number = 1000) {
+    this.polling = true;
+
+    // start polling
+    debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
+    forever(async () => {
+      if (this.polling) {
+        if (this.__canPollTask()) {
+          this.pollAndWork(taskType, fn).then(
+            (data: any) => {
+              // debug(data);
+            },
+            (err: any) => {
+              debugError(err);
+            },
+          );
+        }
+        await delay(interval);
+      } else {
+        debug(`Stop polling: taskType = ${taskType}`);
+        return END;
+      }
+    });
+  }
+
+  stop() {
+    this.polling = false;
+  }
 }
 
 export default ConductorWorker;
-export {ConductorWorker, RunningTask};
+export { ConductorWorker, RunningTask };

@@ -6,11 +6,11 @@ const taskType = 'lib_test';
 const wfName = `test_wf_${taskType}`;
 
 const config = {
-    taskType,
-    wfName,
-    url,
-    apiPath,
-    apiEndpoint,
+  taskType,
+  wfName,
+  url,
+  apiPath,
+  apiEndpoint,
 };
 
-module.exports = config;
+export default config;
