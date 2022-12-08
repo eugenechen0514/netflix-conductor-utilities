@@ -127,7 +127,7 @@ This middleware functionality is useful for fetching extra data into a “task c
 
 Each polled task has own "task-context" instance, it will pass through all middlewares.
 
-For instance, you can create an [awilix](https://github.com/jeffijoe/awilix) scoped container for each task
+For instance, you can create an [awilix](https://github.com/jeffijoe/awilix) scoped container for each polled task
 
 ```typescript
 const container = createContainer();
