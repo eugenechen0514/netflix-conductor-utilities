@@ -80,7 +80,7 @@ const workflow = await workflowManager.startWorkflow({
 ```
 
 ### ConductorWorker
-ConductorWorker Usage
+#### ConductorWorker Simple Usage
 
 ``` typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
@@ -109,4 +109,50 @@ setTimeout(() => {
     worker.stop();
 }, 20000)
 ```
+
+#### ConductorWorker Usage with Middleware
+``` typescript
+import {ConductorWorker} from 'netflix-conductor-utilities';
+
+// 'a_task_id' worker
+const worker = new ConductorWorker<{message: string}, {data: string}>({
+    url: 'http://localhost:8080',
+    workerid: 'my_worker_host',
+   
+   // maximum number of parallel running tasks
+    maxConcurrent: 2,
+    
+    // shoule be 'true' for a ConductorV2
+    needAckTask: false
+});
+
+// add middleware - promise version
+worker.use(async (ctx) => {
+  ctx.user = await getUser();
+});
+
+// add middleware - callback version
+worker.use((ctx, next) => {
+  getUser()
+    .then((user) => {
+      ctx.user = user;
+      next();
+    })
+    .catch((err) => {
+      next(err);
+    });
+});
+
+
+// start
+worker.start('a_task_id', async (input: {data: string}, task) => {
+    // send log
+    await task.sendLog('hi');
+    return {message: input.data};
+}, 5000);
+
+```
+
+#### Other examples
+[See more example](./example)
 

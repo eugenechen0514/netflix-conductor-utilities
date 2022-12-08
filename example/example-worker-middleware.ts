@@ -35,9 +35,21 @@ const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
   },
 });
 
-// add middleware
-worker.use(async function (ctx, next) {
+// add middleware - promise version
+worker.use(async (ctx) => {
   ctx.user = await getUser();
+});
+
+// add middleware - callback version
+worker.use((ctx, next) => {
+  getUser()
+    .then((user) => {
+      ctx.user = user;
+      next();
+    })
+    .catch((err) => {
+      next(err);
+    });
 });
 
 // polling
@@ -46,7 +58,7 @@ const taskType = config.taskType;
   console.log('Work polling');
 
   const taskWorkerFn: WorkFunction<MyTaskInput, MyTaskOutput, MyWorkContext> = async (input, task, ctx) => {
-    console.log(`use: ${JSON.stringify(ctx.user)}`);
+    console.log(`user: ${JSON.stringify(ctx.user)}`);
     console.log(`deal with the task: ${JSON.stringify(task.options)}`);
 
     await task.sendLog('before 1');
