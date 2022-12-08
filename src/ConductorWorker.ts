@@ -134,27 +134,35 @@ class ConductorWorker<
   }
 
   __registerMiddleware(chain: Superchain, middleware: ConductorWorkerMiddleware<OUTPUT, INPUT, CTX>) {
-    chain.add(async function (_ctx: any, next: ConductorWorkerMiddlewareNext) {
-      // @ts-ignore
-      const ctx = getTaskCtx<OUTPUT, INPUT, CTX>(this);
+    chain.add(function (_ctx: any, next: () => void) {
+      return new Promise<void>((resolve, reject) => {
+        // @ts-ignore
+        const ctx = getTaskCtx<OUTPUT, INPUT, CTX>(this);
 
-      // for callback version
-      const handleNext = function (err?: Error) {
-        if (err) {
-          throw err;
-        } else {
-          next();
+        // handle next for callback version
+        const handleNext = function (err?: Error) {
+          // for callback version
+          if (err) {
+            reject(err);
+          } else {
+            next();
+            resolve();
+          }
+        };
+
+        // handle next for promise version
+        const result = middleware(ctx, handleNext);
+        if (isPromise(result)) {
+          result
+            .then(() => {
+              next();
+              resolve();
+            })
+            .catch((e) => {
+              reject(e);
+            });
         }
-      };
-
-      // for promise version
-      const result = middleware(ctx, handleNext);
-      if (isPromise(result)) {
-        result.then(() => {
-          next();
-        });
-      }
-      return result;
+      });
     });
   }
 
