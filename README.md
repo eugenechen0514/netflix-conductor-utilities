@@ -114,6 +114,9 @@ setTimeout(() => {
 ```
 
 #### ConductorWorker Usage with Middleware
+
+This function is useful for fetching extra data into "task context" before executing a task.
+
 ``` typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
@@ -148,7 +151,10 @@ worker.use((ctx, next) => {
 
 
 // start
-worker.start('a_task_id', async (input: {data: string}, task) => {
+worker.start('a_task_id', async (input: {data: string}, task, ctx) => {
+    // access context
+    console.log(ctx.user)
+
     // send log
     await task.sendLog('hi');
     return {message: input.data};

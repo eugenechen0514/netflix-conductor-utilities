@@ -63,26 +63,32 @@ class ConductorWorker extends events_1.EventEmitter {
     }
     __registerMiddleware(chain, middleware) {
         chain.add(function (_ctx, next) {
-            return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
                 // @ts-ignore
                 const ctx = (0, chainUtils_1.getTaskCtx)(this);
-                // for callback version
+                // handle next for callback version
                 const handleNext = function (err) {
+                    // for callback version
                     if (err) {
-                        throw err;
+                        reject(err);
                     }
                     else {
                         next();
+                        resolve();
                     }
                 };
-                // for promise version
+                // handle next for promise version
                 const result = middleware(ctx, handleNext);
                 if ((0, is_promise_1.default)(result)) {
-                    result.then(() => {
+                    result
+                        .then(() => {
                         next();
+                        resolve();
+                    })
+                        .catch((e) => {
+                        reject(e);
                     });
                 }
-                return result;
             });
         });
     }
