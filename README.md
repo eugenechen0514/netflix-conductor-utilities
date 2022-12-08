@@ -1,4 +1,7 @@
-in progress...
+This is a non-official package. 
+
+If you are looking for official packages, you can find [conductor-javascript](https://github.com/conductor-sdk/conductor-javascript) in [conductor-sdk](https://github.com/conductor-sdk) repository  
+
 
 [![NPM](https://nodei.co/npm/netflix-conductor-utilities.png)](https://nodei.co/npm/netflix-conductor-utilities/)
 <!--[![NPM](https://nodei.co/npm-dl/netflix-conductor-utilities.png?height=3)](https://nodei.co/npm/netflix-conductor-utilities/)-->
