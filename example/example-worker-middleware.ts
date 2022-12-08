@@ -6,22 +6,24 @@ const fakeTaskProcessingTime = 1000;
 
 // helpers
 
-async function getUser(): Promise<{ name: string }> {
+async function getUser(id: string): Promise<{ name: string }> {
   return {
-    name: 'test-use',
+    name: 'test-user-' + id,
   };
 }
 
 // create a worker
-type MyTaskInput = void;
+type MyTaskInput = {
+  userId: string;
+};
 type MyTaskOutput = void;
-interface MyWorkContext extends ConductorWorkerChainContext<MyTaskInput, MyTaskOutput> {
+interface MyWorkContext extends ConductorWorkerChainContext<MyTaskOutput, MyTaskInput> {
   user: {
     name: string;
   };
 }
 
-const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
+const worker = new ConductorWorker<MyTaskOutput, MyTaskInput, MyWorkContext>({
   url: config.url, // host
   // apiPath: config.apiPath, // base path
   workerid: DEMO_WORKER_ID,
@@ -37,12 +39,12 @@ const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
 
 // add middleware - promise version
 worker.use(async (ctx) => {
-  ctx.user = await getUser();
+  ctx.user = await getUser(ctx.input.userId);
 });
 
 // add middleware - callback version
 worker.use((ctx, next) => {
-  getUser()
+  getUser(ctx.input.userId)
     .then((user) => {
       ctx.user = user;
       next();
@@ -57,7 +59,7 @@ const taskType = config.taskType;
 (async () => {
   console.log('Work polling');
 
-  const taskWorkerFn: WorkFunction<MyTaskInput, MyTaskOutput, MyWorkContext> = async (input, task, ctx) => {
+  const taskWorkerFn: WorkFunction<MyTaskOutput, MyTaskInput, MyWorkContext> = async (input, task, ctx) => {
     console.log(`user: ${JSON.stringify(ctx.user)}`);
     console.log(`deal with the task: ${JSON.stringify(task.options)}`);
 

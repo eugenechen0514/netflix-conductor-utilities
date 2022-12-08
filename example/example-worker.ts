@@ -6,7 +6,7 @@ const fakeTaskProcessingTime = 60000;
 
 type MyTaskInput = void;
 type MyTaskOutput = void;
-const worker = new ConductorWorker<MyTaskInput, MyTaskOutput>({
+const worker = new ConductorWorker<MyTaskOutput, MyTaskInput>({
   url: config.url, // host
   // apiPath: config.apiPath, // base path
   workerid: DEMO_WORKER_ID,

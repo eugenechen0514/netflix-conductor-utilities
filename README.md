@@ -32,6 +32,8 @@ Sample code written by *TypeScript* and they are in some async function.
 2. Utils
     1. [WorkflowManager](#WorkflowManager)
     2. [ConductorWorker](#ConductorWorker)
+       * [Simple Usage](#ConductorWorker Simple Usage)
+       * [with Middleware](#ConductorWorker Usage with Middleware)
      
 
 ## Metadata Manager
@@ -39,7 +41,7 @@ Sample code written by *TypeScript* and they are in some async function.
 
 ### TaskMetadataManager
 
-``` typescript
+```typescript
 import {TaskMetadataManager} from 'netflix-conductor-utilities';
 
 const taskMetaManager = new TaskMetadataManager({apiEndpoint: 'http://localhost:8080/api/'});
@@ -51,7 +53,7 @@ await taskMetaManager.registerTasks([{
 
 ### WorkflowMetadataManager
 
-``` typescript
+```typescript
 import {WorkflowTaskType, WorkflowMetadataManager} from 'netflix-conductor-utilities';
 
 const workflowMetaManager = new WorkflowMetadataManager({apiEndpoint: 'http://localhost:8080/api/'});
@@ -73,7 +75,7 @@ const workflow = await workflowMetaManager.registerWorkflow({
 
 ### WorkflowManager
 
-``` typescript
+```typescript
 import {WorkflowManager} from 'netflix-conductor-utilities';
 
 const workflowManager = new WorkflowManager({apiEndpoint: 'http://localhost:8080/api/'});
@@ -85,7 +87,7 @@ const workflow = await workflowManager.startWorkflow({
 ### ConductorWorker
 #### ConductorWorker Simple Usage
 
-``` typescript
+```typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
 // 'a_task_id' worker
@@ -115,13 +117,33 @@ setTimeout(() => {
 
 #### ConductorWorker Usage with Middleware
 
-This function is useful for fetching extra data into "task context" before executing a task.
+This middleware functionality is useful for fetching extra data into a “task context” before you deal with a polled task.
 
-``` typescript
+Each polled task has own "task-context" instance, it will pass through all middlewares.
+
+For instance, you can create an [awilix](https://github.com/jeffijoe/awilix) scoped container for each task
+
+```typescript
+const container = createContainer();
+worker.use(async (ctx) => {
+  // scoped dependcies
+  const userId = ctx.input.userId;
+    
+  // create a scoped container
+  const scopeContainer = container.createScope();
+  const user = await getCurrentUser(userId);
+  scopeContainer.register({ currentUser: asValue(user) });
+  ctx.scopeContainer = scopeContainer;
+});
+```
+
+**worker.use(middleware)** set a middleware. It supports promise version and callback version.
+
+```typescript
 import {ConductorWorker} from 'netflix-conductor-utilities';
 
 // 'a_task_id' worker
-const worker = new ConductorWorker<{message: string}, {data: string}>({
+const worker = new ConductorWorker<{message: string}, {userId: string}>({
     url: 'http://localhost:8080',
     workerid: 'my_worker_host',
    
@@ -134,12 +156,12 @@ const worker = new ConductorWorker<{message: string}, {data: string}>({
 
 // add middleware - promise version
 worker.use(async (ctx) => {
-  ctx.user = await getUser();
+  ctx.user = await getUser(ctx.input.userId);
 });
 
 // add middleware - callback version
 worker.use((ctx, next) => {
-  getUser()
+  getUser(ctx.input.userId)
     .then((user) => {
       ctx.user = user;
       next();
@@ -151,13 +173,13 @@ worker.use((ctx, next) => {
 
 
 // start
-worker.start('a_task_id', async (input: {data: string}, task, ctx) => {
+worker.start('a_task_id', async (input: {userId: string}, task, ctx) => {
     // access context
     console.log(ctx.user)
 
     // send log
     await task.sendLog('hi');
-    return {message: input.data};
+    return {message: input.userId};
 }, 5000);
 
 ```
