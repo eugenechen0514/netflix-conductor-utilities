@@ -85,6 +85,12 @@ const workflow = await workflowManager.startWorkflow({
 ```
 
 ### ConductorWorker
+
+`ConductorWorker<OUTPUT, INPUT, CTX>` is a generic class with
+* **OUTPUT** : task output data
+* **INPUT** : task input data 
+* **CTX** : polled task context. See: [ConductorWorker with Middleware](#conductorworker-usage-with-middleware)
+
 #### ConductorWorker Simple Usage
 
 ```typescript
@@ -103,7 +109,7 @@ const worker = new ConductorWorker<{message: string}, {data: string}>({
 });
 
 // start
-worker.start('a_task_id', async (input: {data: string}, task) => {
+worker.start('a_task_id', async (input, task) => {
     // send log
     await task.sendLog('hi');
     return {message: input.data};
@@ -173,7 +179,7 @@ worker.use((ctx, next) => {
 
 
 // start
-worker.start('a_task_id', async (input: {userId: string}, task, ctx) => {
+worker.start('a_task_id', async (input, task, ctx) => {
     // access context
     console.log(ctx.user)
 
