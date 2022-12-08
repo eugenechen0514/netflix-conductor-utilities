@@ -24,17 +24,14 @@ Note: The previous versions before 0.6.1 only work for ConductorV2.
 
 # Usage
 
-Sample code written by *TypeScript* and they are in some async function.
-
 1. Metadata Manager
-    1. [TaskMetadataManager](#TaskMetadataManager)
-    2. [WorkflowMetadataManager](#WorkflowMetadataManager)
+    1. [TaskMetadataManager](#TaskMetadataManager) : task metadata management
+    2. [WorkflowMetadataManager](#WorkflowMetadataManager) : workflow metadata management
 2. Utils
-    1. [WorkflowManager](#WorkflowManager)
-    2. [ConductorWorker](#ConductorWorker)
-       * [Simple Usage](#conductorworker-simple-usage)
-       * [with Middleware](#conductorworker-usage-with-middleware)
-
+    1. [WorkflowManager](#WorkflowManager) : manipulate workflows
+    2. [ConductorWorker](#ConductorWorker) : task worker
+       * [simple usage](#conductorworker-simple-usage)
+       * [simple usage with middleware](#conductorworker-usage-with-middleware)
 
 ## Metadata Manager
 
