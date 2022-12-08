@@ -32,9 +32,9 @@ Sample code written by *TypeScript* and they are in some async function.
 2. Utils
     1. [WorkflowManager](#WorkflowManager)
     2. [ConductorWorker](#ConductorWorker)
-       * [Simple Usage](#ConductorWorker Simple Usage)
-       * [with Middleware](#ConductorWorker Usage with Middleware)
-     
+       * [Simple Usage](#conductorworker-simple-usage)
+       * [with Middleware](#conductorworker-usage-with-middleware)
+
 
 ## Metadata Manager
 
