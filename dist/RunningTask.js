@@ -14,8 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("./types");
 const debug_1 = __importDefault(require("debug"));
-const debug = debug_1.default('RunningTask[DEBUG]');
-const debugError = debug_1.default('RunningTask[Error]');
+const debug = (0, debug_1.default)('RunningTask[DEBUG]');
+const debugError = (0, debug_1.default)('RunningTask[Error]');
 class RunningTask {
     constructor(worker, options) {
         this.worker = worker;
@@ -41,8 +41,7 @@ class RunningTask {
             this.updateTaskInfo({
                 status: types_1.TaskState.inProgress,
                 callbackAfterSeconds,
-            })
-                .catch(error => {
+            }).catch((error) => {
                 debugError(error);
             });
         }, this.options.keepAliveTimer.interval);
@@ -66,9 +65,7 @@ class RunningTask {
             if (this.options.keepAliveTimer.enable) {
                 otherInfo.callbackAfterSeconds = this.options.keepAliveTimer.callbackAfterSeconds;
             }
-            return this.updateTaskInfo(Object.assign({ logs: [
-                    { log: msg, createdTime: Date.now() },
-                ] }, otherInfo));
+            return this.updateTaskInfo(Object.assign({ logs: [{ log: msg, createdTime: Date.now() }] }, otherInfo));
         });
     }
     stopTask() {

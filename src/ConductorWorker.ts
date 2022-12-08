@@ -36,7 +36,7 @@ export interface ConductorWorkerOptions {
   needAckTask?: boolean;
 }
 
-export interface ConductorWorkerChainContext<OUTPUT = void, INPUT = any, CTX = any> {
+export interface ConductorWorkerChainBaseContext<OUTPUT = void, INPUT = any> {
   /**
    * input data from a polled task
    */
@@ -46,14 +46,23 @@ export interface ConductorWorkerChainContext<OUTPUT = void, INPUT = any, CTX = a
   worker: ConductorWorker<OUTPUT, INPUT, this>;
 }
 
-export type WorkFunction<OUTPUT = void, INPUT = any, CTX = ConductorWorkerChainContext<OUTPUT, INPUT>> = (
-  input: INPUT,
-  runningTask: RunningTask<OUTPUT>,
-  ctx: CTX,
-) => Promise<OUTPUT>;
+export interface ConductorWorkerChainContext<OUTPUT = void, INPUT = any>
+  extends ConductorWorkerChainBaseContext<OUTPUT, INPUT> {
+  [key: string]: any;
+}
+
+export type WorkFunction<
+  OUTPUT = void,
+  INPUT = any,
+  CTX extends ConductorWorkerChainBaseContext<OUTPUT, INPUT> = ConductorWorkerChainContext<OUTPUT, INPUT>,
+> = (input: INPUT, runningTask: RunningTask<OUTPUT>, ctx: CTX) => Promise<OUTPUT>;
 
 export type ConductorWorkerMiddlewareNext = (error?: Error) => void;
-export type ConductorWorkerMiddleware<CTX = ConductorWorkerChainContext> = (
+export type ConductorWorkerMiddleware<
+  OUTPUT,
+  INPUT,
+  CTX extends ConductorWorkerChainBaseContext<OUTPUT, INPUT> = ConductorWorkerChainContext<OUTPUT, INPUT>,
+> = (
   ctx: CTX,
   /**
    * invoke next() if use callback-version middleware
@@ -124,10 +133,10 @@ class ConductorWorker<
     return true;
   }
 
-  __registerMiddleware(chain: Superchain, middleware: ConductorWorkerMiddleware<CTX>) {
+  __registerMiddleware(chain: Superchain, middleware: ConductorWorkerMiddleware<OUTPUT, INPUT, CTX>) {
     chain.add(async function (_ctx: any, next: ConductorWorkerMiddlewareNext) {
       // @ts-ignore
-      const ctx = getTaskCtx(this);
+      const ctx = getTaskCtx<OUTPUT, INPUT, CTX>(this);
 
       // for callback version
       const handleNext = function (err?: Error) {
@@ -149,7 +158,7 @@ class ConductorWorker<
     });
   }
 
-  add(bucketName: ConductorWorkerChainBucketName, middleware: ConductorWorkerMiddleware<CTX>) {
+  add(bucketName: ConductorWorkerChainBucketName, middleware: ConductorWorkerMiddleware<OUTPUT, INPUT, CTX>) {
     if (bucketName === 'pre') {
       return this.__registerMiddleware(this.__preChain, middleware);
     }
@@ -160,7 +169,7 @@ class ConductorWorker<
    *
    * middleware basic usage
    */
-  use(middleware: ConductorWorkerMiddleware<CTX>) {
+  use(middleware: ConductorWorkerMiddleware<OUTPUT, INPUT, CTX>) {
     return this.add('pre', middleware);
   }
 
@@ -205,7 +214,7 @@ class ConductorWorker<
       processingTask.task.startTask();
 
       // Processing
-      const initCtx: ConductorWorkerChainContext<OUTPUT, INPUT, CTX> = {
+      const initCtx: ConductorWorkerChainContext<OUTPUT, INPUT> = {
         input,
         pollTask,
         runningTask: processingTask.task,
@@ -215,7 +224,7 @@ class ConductorWorker<
         .run(initCtx)
         .then((chainCtx: any) => {
           // get task ctx
-          const taskCtx = getTaskCtx(chainCtx);
+          const taskCtx = getTaskCtx<OUTPUT, INPUT, CTX>(chainCtx);
           const { input, runningTask } = taskCtx;
 
           // user process

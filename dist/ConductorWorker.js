@@ -17,12 +17,15 @@ const debug_1 = __importDefault(require("debug"));
 const events_1 = require("events");
 const run_forever_1 = require("run-forever");
 const delay_1 = __importDefault(require("delay"));
+const superchain_1 = require("superchain");
 const axios_1 = __importDefault(require("axios"));
 const _1 = require("./");
 const RunningTask_1 = __importDefault(require("./RunningTask"));
 exports.RunningTask = RunningTask_1.default;
-const debug = debug_1.default('ConductorWorker[DEBUG]');
-const debugError = debug_1.default('ConductorWorker[Error]');
+const chainUtils_1 = require("./utils/chainUtils");
+const is_promise_1 = __importDefault(require("is-promise"));
+const debug = (0, debug_1.default)('ConductorWorker[DEBUG]');
+const debugError = (0, debug_1.default)('ConductorWorker[Error]');
 class ConductorWorker extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
@@ -30,6 +33,12 @@ class ConductorWorker extends events_1.EventEmitter {
         this.maxConcurrent = Number.POSITIVE_INFINITY;
         this.runningTasks = [];
         this.needAckTask = false;
+        /**
+         * chain bucket:
+         *  pre
+         * support by https://www.npmjs.com/package/superchain
+         */
+        this.bucketChain = new superchain_1.Bucketchain();
         const { url = 'http://localhost:8080', apiPath = '/api', workerid = undefined, maxConcurrent, runningTaskOptions = {}, needAckTask, } = options;
         this.url = url;
         this.apiPath = apiPath;
@@ -37,6 +46,8 @@ class ConductorWorker extends events_1.EventEmitter {
         this.runningTaskOptions = runningTaskOptions;
         maxConcurrent && (this.maxConcurrent = maxConcurrent);
         needAckTask && (this.needAckTask = needAckTask);
+        // chain
+        this.__preChain = (0, chainUtils_1.initPreChainMiddleware)(this.bucketChain);
         this.client = axios_1.default.create({
             baseURL: this.url,
             responseType: 'json',
@@ -50,18 +61,57 @@ class ConductorWorker extends events_1.EventEmitter {
         }
         return true;
     }
+    __registerMiddleware(chain, middleware) {
+        chain.add(function (_ctx, next) {
+            return __awaiter(this, void 0, void 0, function* () {
+                // @ts-ignore
+                const ctx = (0, chainUtils_1.getTaskCtx)(this);
+                // for callback version
+                const handleNext = function (err) {
+                    if (err) {
+                        throw err;
+                    }
+                    else {
+                        next();
+                    }
+                };
+                // for promise version
+                const result = middleware(ctx, handleNext);
+                if ((0, is_promise_1.default)(result)) {
+                    result.then(() => {
+                        next();
+                    });
+                }
+                return result;
+            });
+        });
+    }
+    add(bucketName, middleware) {
+        if (bucketName === 'pre') {
+            return this.__registerMiddleware(this.__preChain, middleware);
+        }
+        throw new Error(`unknown bucketName: ${bucketName}`);
+    }
+    /**
+     *
+     * middleware basic usage
+     */
+    use(middleware) {
+        return this.add('pre', middleware);
+    }
     pollAndWork(taskType, fn) {
+        // keep 'function'
         return (() => __awaiter(this, void 0, void 0, function* () {
             // Poll for Worker task
             debug(`Poll a "${taskType}" task`);
-            const { data: pullTask } = yield this.client.get(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
-            if (!pullTask) {
+            const { data: pollTask } = yield this.client.get(`${this.apiPath}/tasks/poll/${taskType}?workerid=${this.workerid}`);
+            if (!pollTask) {
                 debug(`No more "${taskType}" tasks`);
                 return;
             }
-            debug(`Polled a "${taskType}" task: `, pullTask);
-            const input = pullTask.inputData;
-            const { workflowInstanceId, taskId } = pullTask;
+            debug(`Polled a "${taskType}" task: `, pollTask);
+            const input = pollTask.inputData;
+            const { workflowInstanceId, taskId } = pollTask;
             // Ack the task
             if (this.needAckTask) {
                 debug(`Ack the "${taskType}" task`);
@@ -72,40 +122,55 @@ class ConductorWorker extends events_1.EventEmitter {
                 workflowInstanceId,
                 taskId,
             };
-            const runningTask = {
+            const processingTask = {
                 taskId,
                 task: new RunningTask_1.default(this, Object.assign(Object.assign({}, baseTaskInfo), this.runningTaskOptions)),
             };
-            this.runningTasks.push(runningTask);
-            debug(`Create runningTask: `, runningTask);
+            this.runningTasks.push(processingTask);
+            debug(`Create runningTask: `, processingTask);
             // Working
             debug('Dealing with the task:', { workflowInstanceId, taskId });
-            // const runningTask = this.__forceFindOneProcessingTask(taskId);
-            runningTask.task.startTask();
-            return fn(input, runningTask.task)
-                .then(output => {
-                debug('worker resolve');
-                runningTask.task.stopTask();
-                debug(`Resolve runningTask:`, runningTask);
-                return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: 0, outputData: output, status: _1.TaskState.completed });
+            // const processingTask = this.__forceFindOneProcessingTask(taskId);
+            processingTask.task.startTask();
+            // Processing
+            const initCtx = {
+                input,
+                pollTask,
+                runningTask: processingTask.task,
+                worker: this,
+            };
+            return this.bucketChain
+                .run(initCtx)
+                .then((chainCtx) => {
+                // get task ctx
+                const taskCtx = (0, chainUtils_1.getTaskCtx)(chainCtx);
+                const { input, runningTask } = taskCtx;
+                // user process
+                return fn(input, runningTask, taskCtx).then((output) => {
+                    debug('worker resolve');
+                    runningTask.stopTask();
+                    debug(`Resolve runningTask:`, processingTask);
+                    return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: 0, outputData: output, status: _1.TaskState.completed });
+                });
             })
                 .catch((err) => {
                 debug('worker reject', err);
-                runningTask.task.stopTask();
-                debug(`Reject runningTask:`, runningTask);
+                processingTask.task.stopTask();
+                debug(`Reject runningTask:`, processingTask);
                 return Object.assign(Object.assign({}, baseTaskInfo), { callbackAfterSeconds: 0, reasonForIncompletion: String(err), status: _1.TaskState.failed });
             })
-                .then(updateTaskInfo => {
+                .then((updateTaskInfo) => {
                 // release running task
-                this.runningTasks = this.runningTasks.filter(task => task.taskId !== updateTaskInfo.taskId);
+                this.runningTasks = this.runningTasks.filter((task) => task.taskId !== updateTaskInfo.taskId);
                 debug(`Change the amount of running tasks: ${this.runningTasks.length}`);
                 // Return response, add logs
                 debug('update task info: taskId:' + taskId);
-                return runningTask.task.updateTaskInfo(updateTaskInfo)
-                    .then(result => {
+                return processingTask.task
+                    .updateTaskInfo(updateTaskInfo)
+                    .then((result) => {
                     // debug(result.data);
                 })
-                    .catch(err => {
+                    .catch((err) => {
                     debugError(err); // resolve
                 });
             });
@@ -113,18 +178,18 @@ class ConductorWorker extends events_1.EventEmitter {
     }
     start(taskType, fn, interval = 1000) {
         this.polling = true;
+        // start polling
         debug(`Start polling taskType = ${taskType}, poll-interval = ${interval}, maxConcurrent = ${this.maxConcurrent}`);
-        run_forever_1.forever(() => __awaiter(this, void 0, void 0, function* () {
+        (0, run_forever_1.forever)(() => __awaiter(this, void 0, void 0, function* () {
             if (this.polling) {
                 if (this.__canPollTask()) {
-                    this.pollAndWork(taskType, fn)
-                        .then((data) => {
+                    this.pollAndWork(taskType, fn).then((data) => {
                         // debug(data);
                     }, (err) => {
                         debugError(err);
                     });
                 }
-                yield delay_1.default(interval);
+                yield (0, delay_1.default)(interval);
             }
             else {
                 debug(`Stop polling: taskType = ${taskType}`);

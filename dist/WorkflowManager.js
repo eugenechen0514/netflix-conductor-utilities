@@ -30,7 +30,7 @@ class WorkflowManager {
     constructor(options = {}) {
         this.options = options;
         const { apiEndpoint } = this.options;
-        assert_1.default(apiEndpoint, 'apiEndpoint is empty');
+        (0, assert_1.default)(apiEndpoint, 'apiEndpoint is empty');
         this.client = axios_1.default.create({
             baseURL: apiEndpoint,
             responseType: 'json',
@@ -50,7 +50,7 @@ class WorkflowManager {
         return __awaiter(this, void 0, void 0, function* () {
             const { data: workflowId } = yield this.client.post('/workflow', options);
             const workflow = yield this.retrieveWorkflow(workflowId);
-            assert_1.default(workflow.workflowId === workflowId, 'Start a workflow, but can not find it');
+            (0, assert_1.default)(workflow.workflowId === workflowId, 'Start a workflow, but can not find it');
             return workflow;
         });
     }
@@ -133,7 +133,7 @@ class WorkflowManager {
      */
     skipWorkflowTask(workflowId, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            assert_1.default(options.taskReferenceName, 'taskReferenceName should be not empty');
+            (0, assert_1.default)(options.taskReferenceName, 'taskReferenceName should be not empty');
             const { taskReferenceName } = options, others = __rest(options, ["taskReferenceName"]);
             const { data } = yield this.client.put('/workflow/' + workflowId + '/skiptask/' + taskReferenceName, others);
             const workflow = yield this.retrieveWorkflow(workflowId);

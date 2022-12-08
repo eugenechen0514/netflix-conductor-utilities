@@ -19,7 +19,7 @@ class TaskMetadataManager {
     constructor(options = {}) {
         this.options = options;
         const { apiEndpoint } = this.options;
-        assert_1.default(apiEndpoint, 'apiEndpoint is empty');
+        (0, assert_1.default)(apiEndpoint, 'apiEndpoint is empty');
         this.client = axios_1.default.create({
             baseURL: apiEndpoint,
             responseType: 'json',
@@ -41,7 +41,7 @@ class TaskMetadataManager {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.client.post(`/metadata/taskdefs`, [task]);
             const taskObject = yield this.getTask(task.name);
-            assert_1.default(taskObject.name === task.name, 'Create a task, but can not find task');
+            (0, assert_1.default)(taskObject.name === task.name, 'Create a task, but can not find task');
             return taskObject;
         });
     }

@@ -19,7 +19,7 @@ class WorkflowMetadataManager {
     constructor(options = {}) {
         this.options = options;
         const { apiEndpoint } = this.options;
-        assert_1.default(apiEndpoint, 'apiEndpoint is empty');
+        (0, assert_1.default)(apiEndpoint, 'apiEndpoint is empty');
         this.client = axios_1.default.create({
             baseURL: apiEndpoint,
             responseType: 'json',
@@ -43,7 +43,7 @@ class WorkflowMetadataManager {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.client.post(`/metadata/workflow`, workflow);
             const workflowObject = yield this.getWorkflow(workflow.name);
-            assert_1.default(workflowObject.name === workflow.name, 'Create a workflow, but can not find workflow');
+            (0, assert_1.default)(workflowObject.name === workflow.name, 'Create a workflow, but can not find workflow');
             return workflowObject;
         });
     }
