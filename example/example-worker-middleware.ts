@@ -1,17 +1,10 @@
-import os from 'os';
 import config from './config';
 import { ConductorWorker, ConductorWorkerChainContext, WorkFunction } from '../src';
+import { delay, DEMO_WORKER_ID } from './utils';
 
 const fakeTaskProcessingTime = 1000;
 
 // helpers
-function delay(ms = 10000) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(undefined);
-    }, ms);
-  });
-}
 
 async function getUser(): Promise<{ name: string }> {
   return {
@@ -31,7 +24,7 @@ interface MyWorkContext extends ConductorWorkerChainContext<MyTaskInput, MyTaskO
 const worker = new ConductorWorker<MyTaskInput, MyTaskOutput, MyWorkContext>({
   url: config.url, // host
   // apiPath: config.apiPath, // base path
-  workerid: 'node-worker-' + os.hostname(),
+  workerid: DEMO_WORKER_ID,
   maxConcurrent: 1,
   runningTaskOptions: {
     keepAliveTimer: {
