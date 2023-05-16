@@ -1,9 +1,9 @@
 import { RunningTaskCoreInfo, TaskState, UpdatingTaskResult } from './types';
+import { base } from './utils/logger';
 import ConductorWorker, { ConductorWorkerChainContext } from './ConductorWorker';
-import debugFun from 'debug';
 
-const debug = debugFun('RunningTask[DEBUG]');
-const debugError = debugFun('RunningTask[Error]');
+const debug = base.extend('RunningTask').extend('[DEBUG]');
+const debugError = base.extend('RunningTask').extend('[Error]');
 
 export interface KeepTaskTimerOptions {
   keepAliveTimer: {

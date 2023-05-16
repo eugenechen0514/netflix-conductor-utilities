@@ -8,14 +8,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("./types");
-const debug_1 = __importDefault(require("debug"));
-const debug = (0, debug_1.default)('RunningTask[DEBUG]');
-const debugError = (0, debug_1.default)('RunningTask[Error]');
+const logger_1 = require("./utils/logger");
+const debug = logger_1.base.extend('RunningTask').extend('[DEBUG]');
+const debugError = logger_1.base.extend('RunningTask').extend('[Error]');
 class RunningTask {
     constructor(worker, options) {
         this.worker = worker;

@@ -1,8 +1,8 @@
-import debugFun from 'debug';
 import { EventEmitter } from 'events';
 import { END, forever } from 'run-forever';
 import delay from 'delay';
 import { Bucketchain, Superchain } from 'superchain';
+import { base } from './utils/logger';
 
 import axios, { AxiosInstance } from 'axios';
 import { PollTask, RunningTaskCoreInfo, TaskState, UpdatingTaskResult } from './';
@@ -10,8 +10,8 @@ import RunningTask, { KeepTaskTimerOptions } from './RunningTask';
 import { getTaskCtx, initPreChainMiddleware } from './utils/chainUtils';
 import isPromise from 'is-promise';
 
-const debug = debugFun('ConductorWorker[DEBUG]');
-const debugError = debugFun('ConductorWorker[Error]');
+const debug = base.extend('ConductorWorker').extend('[DEBUG]');
+const debugError = base.extend('ConductorWorker').extend('[Error]');
 
 interface ProcessingTask<
   OUTPUT = void,

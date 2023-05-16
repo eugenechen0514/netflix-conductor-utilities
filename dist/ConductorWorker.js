@@ -13,19 +13,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RunningTask = exports.ConductorWorker = void 0;
-const debug_1 = __importDefault(require("debug"));
 const events_1 = require("events");
 const run_forever_1 = require("run-forever");
 const delay_1 = __importDefault(require("delay"));
 const superchain_1 = require("superchain");
+const logger_1 = require("./utils/logger");
 const axios_1 = __importDefault(require("axios"));
 const _1 = require("./");
 const RunningTask_1 = __importDefault(require("./RunningTask"));
 exports.RunningTask = RunningTask_1.default;
 const chainUtils_1 = require("./utils/chainUtils");
 const is_promise_1 = __importDefault(require("is-promise"));
-const debug = (0, debug_1.default)('ConductorWorker[DEBUG]');
-const debugError = (0, debug_1.default)('ConductorWorker[Error]');
+const debug = logger_1.base.extend('ConductorWorker').extend('[DEBUG]');
+const debugError = logger_1.base.extend('ConductorWorker').extend('[Error]');
 class ConductorWorker extends events_1.EventEmitter {
     constructor(options = {}) {
         super();
