@@ -153,7 +153,7 @@ export interface WorkflowMetadataDefinition {
   /**
    * List of input parameters. Used for documenting the required inputs to workflow
    */
-  inputParameters?: object;
+  inputParameters?: string | object;
 
   /**
    * JSON template used to generate the output of the workflow
@@ -245,7 +245,7 @@ export interface WorkflowTaskMetadata {
    *
    * See [Wiring Inputs and Outputs for details](https://netflix.github.io/conductor/configuration/workflowdef/#wiring-inputs-and-outputs)
    */
-  inputParameters?: object;
+  inputParameters?: string | object;
 
   /**
    * See [Task Domains for more information](https://netflix.github.io/conductor/configuration/taskdomains/).
