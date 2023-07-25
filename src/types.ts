@@ -153,14 +153,14 @@ export interface WorkflowMetadataDefinition {
   /**
    * List of input parameters. Used for documenting the required inputs to workflow
    */
-  inputParameters?: object;
+  inputParameters?: string[];
 
   /**
    * JSON template used to generate the output of the workflow
    *
    * If not specified, the output is defined as the output of the last executed task
    */
-  outputParameters?: object;
+  outputParameters?: string[];
 
   /**
    * String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.
