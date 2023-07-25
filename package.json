@@ -1,6 +1,6 @@
 {
   "name": "netflix-conductor-utilities",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "description": "Netflix conductor utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

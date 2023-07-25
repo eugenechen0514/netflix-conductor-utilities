@@ -160,7 +160,7 @@ export interface WorkflowMetadataDefinition {
    *
    * If not specified, the output is defined as the output of the last executed task
    */
-  outputParameters?: string[];
+  outputParameters?: object;
 
   /**
    * String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.
