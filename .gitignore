@@ -68,3 +68,6 @@ build
 .DS_Store
 
 dist
+
+# local files
+*.local.json

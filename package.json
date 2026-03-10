@@ -29,7 +29,7 @@
     "debug": "^4.3.4",
     "delay": "^5.0.0",
     "is-promise": "^4.0.0",
-    "run-forever": "^0.2.0",
+    "run-forever": "^0.4.3",
     "superchain": "^2.3.5"
   },
   "devDependencies": {
